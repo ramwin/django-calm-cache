@@ -12,12 +12,12 @@ bucket loads of traffic.
 
 ## Quick Start
 
-Install the library:
+First install the library:
 
     pip install hg+https://bitbucket.org/pitcrews/django-calm-cache/
 
 
-Update the cache settings:
+Next update the cache settings in your `settings.py`:
 
     CACHES = {
         'default': {
@@ -32,9 +32,17 @@ Update the cache settings:
         }
     }
 
+Now relax knowing your site's caching won't fall over at the first sign of sustained traffic.
 
 ## Known Limitations
 
  * Currently only supports cache methods `add`, `set`, `get`, `delete`,
    `has_key` and `clear`
+
+## Legals
+
+License: BSD 3-clause
+
+Copyright (c) 2013, Fairfax Media Limited
+All rights reserved.
 
