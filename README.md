@@ -23,8 +23,8 @@ Update the cache settings:
         'default': {
             'BACKEND' : 'calm_cache.CalmCache',
             'LOCATION': 'locmem-cache',
-            'MINT_DELAY': '10', # Time in seconds. 0 = no minting. Default: 0
-            'JITTER_TIME': '10', # Upper bound on the random jitter in seconds. Default: 0
+            'MINT_DELAY': '10', # Allow stale results for this many seconds. Default: 0 (Off)
+            'JITTER_TIME': '10', # Upper bound on the random jitter in seconds. Default: 0 (Off)
         },
         'locmem-cache': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -32,4 +32,9 @@ Update the cache settings:
         }
     }
 
+
+## Known Limitations
+
+ * Currently only supports cache methods `add`, `set`, `get`, `delete`,
+   `has_key` and `clear`
 
