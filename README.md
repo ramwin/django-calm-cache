@@ -5,8 +5,9 @@ bucket loads of traffic.
 
 ## Key Features
 
- * Mint caching to avoid the dog pile effect
- * Timeout jitter to reduce the number of entires expiring simultaneously
+ * [Mint caching](http://djangosnippets.org/snippets/155/) to avoid the
+   [dog pile](http://en.wikipedia.org/wiki/Cache_stampede) effect
+ * Timeout jitter to reduce the number of entries expiring simultaneously
  * Works alongside any other Django cache backend.
 
 ## Quick Start
