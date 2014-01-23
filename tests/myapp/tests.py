@@ -73,10 +73,10 @@ class CalmCacheTest(TestCase):
 class KeyFuncTest(TestCase):
 
     def setUp(self):
-        self._key_func = testcache.key_func
+        self._key_func = cache.key_func
 
     def tearDown(self):
-        testcache.key_func = self._key_func
+        cache.key_func = self._key_func
 
     def test_sha1_key_func(self):
         # Resulting key should contain hashed part
@@ -92,6 +92,6 @@ class KeyFuncTest(TestCase):
         hashed_key = hashlib.sha1(plain_key).hexdigest()
         # Store with pre-hashed key, replace
         # key function and fetch with plain key
-        testcache.set(hashed_key, 'test-value-10', timeout=60)
-        testcache.key_func = sha1_key_func
-        self.assertEqual(testcache.get(plain_key), 'test-value-10')
+        cache.set(hashed_key, 'test-value-10', timeout=60)
+        cache.key_func = sha1_key_func
+        self.assertEqual(cache.get(plain_key), 'test-value-10')
