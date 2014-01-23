@@ -79,6 +79,7 @@ class CalmCache(BaseCache):
         return self.cache.add(key, value, timeout=self._get_real_timeout(timeout), version=version)
 
     def set(self, key, value, timeout=None, version=None, refreshing=False):
+        # Prevent double make_key() application when called from get()
         if not refreshing:
             key = self.make_key(key, version=version)
         timeout = timeout or self.default_timeout
