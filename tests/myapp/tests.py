@@ -27,7 +27,7 @@ class CalmCacheTest(TestCase):
 
     def test_set(self):
         cache.set('test-key-1', 'test-value-1', timeout=60)
-        r = testcache.get('test-key-1')
+        r = testcache.get(cache.make_key('test-key-1'))
         self.assertEqual(r, ('test-value-1', 63, False))
 
     def test_get(self):
@@ -66,7 +66,7 @@ class CalmCacheTest(TestCase):
         r = cache.get('test-key-4')
         self.assertEqual(r, 'test-value-4')
         # introspect the inner cache to make sure
-        r = testcache.get('test-key-4')
+        r = testcache.get(cache.make_key('test-key-4'))
         self.assertEqual(r, ('test-value-4', 77, True))
 
 

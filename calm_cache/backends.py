@@ -73,16 +73,20 @@ class CalmCache(BaseCache):
         return timeout + self.mint_delay + self.jitter()
 
     def add(self, key, value, timeout=None, version=None):
+        key = self.make_key(key, version=version)
         timeout = timeout or self.default_timeout
         value = self._pack_value(value, timeout)
         return self.cache.add(key, value, timeout=self._get_real_timeout(timeout), version=version)
 
     def set(self, key, value, timeout=None, version=None, refreshing=False):
+        if not refreshing:
+            key = self.make_key(key, version=version)
         timeout = timeout or self.default_timeout
         value = self._pack_value(value, timeout, refreshing=refreshing)
         self.cache.set(key, value, timeout=self._get_real_timeout(timeout), version=version)
 
     def get(self, key, default=None, version=None):
+        key = self.make_key(key, version=version)
         value = self.cache.get(key, default=None, version=version)
         if value is None:
             return default
@@ -93,9 +97,11 @@ class CalmCache(BaseCache):
         return value
 
     def delete(self, key, version=None):
+        key = self.make_key(key, version=version)
         self.cache.delete(key, version=version)
 
     def has_key(self, key, version=None):
+        key = self.make_key(key, version=version)
         return self.cache.has_key(key, version=version)
 
     def clear(self):
