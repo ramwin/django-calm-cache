@@ -73,37 +73,36 @@ class CalmCache(BaseCache):
         return timeout + self.mint_delay + self.jitter()
 
     def add(self, key, value, timeout=None, version=None):
-        key = self.make_key(key, version=version)
+        cache_key = self.make_key(key, version=version)
         timeout = timeout or self.default_timeout
         value = self._pack_value(value, timeout)
-        return self.cache.add(key, value, timeout=self._get_real_timeout(timeout), version=version)
+        return self.cache.add(cache_key, value, timeout=self._get_real_timeout(timeout), version=version)
 
     def set(self, key, value, timeout=None, version=None, refreshing=False):
-        # Prevent double make_key() application when called from get()
-        if not refreshing:
-            key = self.make_key(key, version=version)
+        cache_key = self.make_key(key, version=version)
         timeout = timeout or self.default_timeout
         value = self._pack_value(value, timeout, refreshing=refreshing)
-        self.cache.set(key, value, timeout=self._get_real_timeout(timeout), version=version)
+        self.cache.set(cache_key, value, timeout=self._get_real_timeout(timeout), version=version)
 
     def get(self, key, default=None, version=None):
-        key = self.make_key(key, version=version)
-        value = self.cache.get(key, default=None, version=version)
+        cache_key = self.make_key(key, version=version)
+        value = self.cache.get(cache_key, default=None, version=version)
         if value is None:
             return default
         value, refresh_time, refreshing = self._unpack_value(value)
         if (self._time() > refresh_time) and not refreshing:
+            # Use user-supplied key here, so it will be transformed in set()
             self.set(key, value, timeout=self.mint_delay, version=version, refreshing=True)
             return None
         return value
 
     def delete(self, key, version=None):
-        key = self.make_key(key, version=version)
-        self.cache.delete(key, version=version)
+        cache_key = self.make_key(key, version=version)
+        self.cache.delete(cache_key, version=version)
 
     def has_key(self, key, version=None):
-        key = self.make_key(key, version=version)
-        return self.cache.has_key(key, version=version)
+        cache_key = self.make_key(key, version=version)
+        return self.cache.has_key(cache_key, version=version)
 
     def clear(self):
         self.cache.clear()
