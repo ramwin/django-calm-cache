@@ -1,2 +1,2 @@
-from calmcache import CalmCache
-from memcached import ZipMemcachedCache, ZipPyLibMCCache
+from .calmcache import CalmCache
+from .memcached import ZipMemcachedCache, ZipPyLibMCCache

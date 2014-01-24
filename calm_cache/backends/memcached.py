@@ -42,9 +42,63 @@ class ZippedMCMixin(object):
         return cache
 
 
+class BinPyLibMCCache(PyLibMCCache):
+    """
+    Extend standard `PyLibMCCache` to support binary protocol.
+
+    It can be enabled either by setting `BINARY: True` among backend
+    options or globally as Django setting `MEMCACHE_BINARY = True`
+    """
+
+    def __init__(self, server, params):
+        self.binary_proto = params.pop(
+            'BINARY', getattr(settings, 'MEMCACHE_BINARY', False))
+        super(BinPyLibMCCache, self).__init__(server, params)
+
+
+    # Shamelessly copied from django.cache.backends.PyLibMCCache
+    @cached_property
+    def _cache(self):
+        client = self._lib.Client(self._servers, binary=self.binary_proto)
+        if self._options:
+            client.behaviors = self._options
+
+        return client
+
+
 class ZipMemcachedCache(ZippedMCMixin, MemcachedCache):
+    """
+    An extension of standard `django.cache.backends.MemcachedCache`
+    supporting optional compression of stored values
+
+    Example configuration:
+
+        CACHES = {
+            'default': {
+                'BACKEND': 'calm_cache.backends.ZipMemcachedCache',
+                'LOCATION': '127.0.0.1:11211',
+                'MIN_COMPRESS_LEN': 1024,
+            },
+        }
+    """
     pass
 
 
-class ZipPyLibMCCache(ZippedMCMixin, PyLibMCCache):
+class ZipPyLibMCCache(ZippedMCMixin, BinPyLibMCCache):
+    """
+    An extension of standard `django.cache.backends.PyLibMCCache`
+    supporting optional compression of stored values and optional binary
+    memcached protocol
+
+    Example configuration:
+
+        CACHES = {
+            'default': {
+                'BACKEND': 'calm_cache.backends.ZipPyLibMCCache',
+                'LOCATION': '127.0.0.1:11211',
+                'MIN_COMPRESS_LEN': 1024,
+                'BINARY': True,
+            },
+        }
+    """
     pass
