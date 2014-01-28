@@ -23,6 +23,7 @@ First install the library:
 
 Next update the cache settings in your `settings.py`:
 
+    :::python
     CACHES = {
         'default': {
             'BACKEND' : 'calm_cache.CalmCache',
