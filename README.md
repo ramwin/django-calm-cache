@@ -38,13 +38,13 @@ Next update the cache settings in your `settings.py`:
         'zipped-memcached': {
             'BACKEND': 'calm_cache.backends.ZipMemcachedCache',
             'LOCATION': '127.0.0.1:11211',
-            'MIN_COMPRESS_LEN': 1024,
+            'MIN_COMPRESS_LEN': 1024, # Compress values of this size or larger, bytes
         },
         'zipped-bin-pylibmc': {
             'BACKEND': 'calm_cache.backends.ZipPyLibMCCache',
             'LOCATION': '127.0.0.1:11211',
-            'MIN_COMPRESS_LEN': 1024,
-            'BINARY': True,
+            'MIN_COMPRESS_LEN': 1024, # Compress values larger than this size, bytes
+            'BINARY': True, # Enable binary protocol for this backend
         },
     }
 
