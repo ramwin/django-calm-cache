@@ -8,7 +8,7 @@ from calm_cache.backends.memcached import ZippedMCMixin, BinPyLibMCCache
 
 try:
     import pylibmc as _
-except:
+except ImportError:
     has_pylibmc = False
 else:
     has_pylibmc = True
