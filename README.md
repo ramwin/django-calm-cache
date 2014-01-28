@@ -26,7 +26,7 @@ Next update the cache settings in your `settings.py`:
     :::python
     CACHES = {
         'default': {
-            'BACKEND' : 'calm_cache.CalmCache',
+            'BACKEND' : 'calm_cache.backends.CalmCache',
             'LOCATION': 'locmem-cache',
             'MINT_DELAY': '10', # Allow stale results for this many seconds. Default: 0 (Off)
             'JITTER_TIME': '10', # Upper bound on the random jitter in seconds. Default: 0 (Off)

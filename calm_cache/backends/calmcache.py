@@ -17,7 +17,7 @@ class CalmCache(BaseCache):
 
         CACHES = {
             'default': {
-                'BACKEND' : 'calm_cache.CalmCache',
+                'BACKEND' : 'calm_cache.backends.CalmCache',
                 'LOCATION': 'my_cache',
             },
             'my_cache': {

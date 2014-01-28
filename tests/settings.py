@@ -23,7 +23,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 CACHES = {
     'default': {
-        'BACKEND' : 'calm_cache.CalmCache',
+        'BACKEND' : 'calm_cache.backends.CalmCache',
         'LOCATION': 'testcache',
         'MINT_DELAY': '10',
         'JITTER_TIME': '10',
