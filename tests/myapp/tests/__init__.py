@@ -1,3 +1,3 @@
 from .calmcache import CalmCacheTest
 from .key_func import KeyFuncTest
-from .memcache import MemcacheZipMixinTest
+from .memcache import MemcacheZipMixinTest, BinPyLibMCCacheTest

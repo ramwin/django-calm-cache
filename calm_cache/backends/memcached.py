@@ -21,7 +21,7 @@ class ZippedMCMixin(object):
     compression that is available in both `memcache` and `pylibmc`.
 
     Minimal size of the object that will be compressed (bytes) is set either as
-    `MIN_COMPRESS_LEN` option amond backend options or as Django setting
+    `MIN_COMPRESS_LEN` option amond backend parameters or as Django setting
     `MEMCACHE_MIN_COMPRESS_LEN`.
     """
 
@@ -47,7 +47,7 @@ class BinPyLibMCCache(PyLibMCCache):
     Extend standard `PyLibMCCache` to support binary protocol.
 
     It can be enabled either by setting `BINARY: True` among backend
-    options or globally as Django setting `MEMCACHE_BINARY = True`
+    parameters or globally as Django setting `MEMCACHE_BINARY = True`
     """
 
     def __init__(self, server, params):
