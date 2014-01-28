@@ -1,5 +1,7 @@
-from django.core.cache.backends.memcached import (BaseMemcachedCache,
-                                                  MemcachedCache, PyLibMCCache)
+from django.core.cache.backends.memcached import (
+    BaseMemcachedCache,
+    MemcachedCache as DjangoMemcachedCache,
+    PyLibMCCache as DjangoPyLibMCCache)
 from django.utils.functional import cached_property
 from django.conf import settings
 
@@ -21,7 +23,7 @@ class ZippedMCMixin(object):
     compression that is available in both `memcache` and `pylibmc`.
 
     Minimal size of the object that will be compressed (bytes) is set either as
-    `MIN_COMPRESS_LEN` option amond backend parameters or as Django setting
+    `MIN_COMPRESS_LEN` among backend parameters or as Django setting
     `MEMCACHE_MIN_COMPRESS_LEN`.
     """
 
@@ -42,7 +44,7 @@ class ZippedMCMixin(object):
         return cache
 
 
-class BinPyLibMCCache(PyLibMCCache):
+class BinPyLibMCCache(DjangoPyLibMCCache):
     """
     Extend standard `PyLibMCCache` to support binary protocol.
 
@@ -66,7 +68,7 @@ class BinPyLibMCCache(PyLibMCCache):
         return client
 
 
-class ZipMemcachedCache(ZippedMCMixin, MemcachedCache):
+class MemcachedCache(ZippedMCMixin, DjangoMemcachedCache):
     """
     An extension of standard `django.cache.backends.MemcachedCache`
     supporting optional compression of stored values
@@ -75,7 +77,7 @@ class ZipMemcachedCache(ZippedMCMixin, MemcachedCache):
 
         CACHES = {
             'default': {
-                'BACKEND': 'calm_cache.backends.ZipMemcachedCache',
+                'BACKEND': 'calm_cache.backends.MemcachedCache',
                 'LOCATION': '127.0.0.1:11211',
                 'MIN_COMPRESS_LEN': 1024,
             },
@@ -84,7 +86,7 @@ class ZipMemcachedCache(ZippedMCMixin, MemcachedCache):
     pass
 
 
-class ZipPyLibMCCache(ZippedMCMixin, BinPyLibMCCache):
+class PyLibMCCache(ZippedMCMixin, BinPyLibMCCache):
     """
     An extension of standard `django.cache.backends.PyLibMCCache`
     supporting optional compression of stored values and optional binary
@@ -94,7 +96,7 @@ class ZipPyLibMCCache(ZippedMCMixin, BinPyLibMCCache):
 
         CACHES = {
             'default': {
-                'BACKEND': 'calm_cache.backends.ZipPyLibMCCache',
+                'BACKEND': 'calm_cache.backends.PyLibMCCache',
                 'LOCATION': '127.0.0.1:11211',
                 'MIN_COMPRESS_LEN': 1024,
                 'BINARY': True,
