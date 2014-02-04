@@ -24,7 +24,7 @@ class PageCacheDecorator(object):
             scheme = 'https' if request.is_secure() else 'http'
         else:
             scheme = ''
-        host = request.get_host().lower().strip() if self.consider_host else ''
+        host = request.get_host().lower() if self.consider_host else ''
         key_components = (
             self.key_prefix, request.method, scheme, host,
             request.get_full_path()
