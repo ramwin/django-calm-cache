@@ -10,9 +10,9 @@ class PageCacheDecorator(object):
         self.key_prefix = kwargs.get('key_prefix', '')
         self.methods = kwargs.get('methods', ('GET', ))
         self.codes = kwargs.get('codes', (200, ))
-        self.consider_scheme = ('consider_scheme', True)
-        self.consider_host = ('consider_host', True)
-        self.anonymous_only = ('anonymous_only', True)
+        self.consider_scheme = kwargs.get('consider_scheme', True)
+        self.consider_host = kwargs.get('consider_host', True)
+        self.anonymous_only = kwargs.get('anonymous_only', True)
         self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
