@@ -39,7 +39,7 @@ class PageCacheDecorator(object):
                 return False
         return True
 
-    def should_store(self, request, response):
+    def should_store(self, response):
         if getattr(response, 'streaming', False):
             return False
         if not response.status_code in self.codes:
@@ -55,7 +55,7 @@ class PageCacheDecorator(object):
             return cached_response
 
         response = self.wrapped(request, *args, **kwargs)
-        if not self.should_store(request, response):
+        if not self.should_store(response):
             return response
 
         timeout = get_max_age(response)
