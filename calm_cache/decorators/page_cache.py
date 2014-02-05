@@ -83,7 +83,7 @@ class PageCacheDecorator(object):
     def should_fetch(self, request):
         """
         Returns `True` is this request should be tried against the cache.
-        In the oppisite case, it requrns `False` and wrapped view is executed
+        In the opposite case, it returns `False` and wrapped view is executed
         and returned immediately skipping any further processing.
         """
         if not request.method in self.methods:

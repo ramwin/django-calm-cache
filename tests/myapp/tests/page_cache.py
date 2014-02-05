@@ -38,7 +38,7 @@ class PageCacheTest(TestCase):
 
     def test_default_key_function(self):
         cache = PageCacheDecorator(1, key_prefix='p')
-        # Plain test wil all defaults
+        # Plain test with all defaults
         self.assertEqual(cache.key_func(self.factory.get('/url1/?k1=v1')),
                          'p#GET#http#testserver#/url1/?k1=v1')
         # Different method
