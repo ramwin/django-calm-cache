@@ -13,6 +13,9 @@ bucket loads of traffic.
    data compression provided by [python-memcached](ftp://ftp.tummy.com/pub/python-memcached/)
    and [pylibmc](http://sendapatch.se/projects/pylibmc/) respectively
  * `PyLibMCCache` is extended to support binary protocol
+ * `PageCacheDecorator` that could be applied to any Django view and
+   conditionally cache responses just like Django standard `CacheMiddleware`
+   and `cache_page` do, but more configurable, explicit and extensible
 
 ## Quick Start
 
@@ -20,8 +23,9 @@ First install the library:
 
     pip install hg+https://bitbucket.org/pitcrews/django-calm-cache/
 
+### Cache backends
 
-Next update the cache settings in your `settings.py`:
+Update the cache settings in your `settings.py`:
 
     :::python
     CACHES = {
@@ -50,10 +54,47 @@ Next update the cache settings in your `settings.py`:
 
 Now relax knowing your site's caching won't fall over at the first sign of sustained traffic.
 
+### Page Cache
+
+Example usage:
+
+    :::python
+    from calm_cache.decorated impoty PageCacheDecorator
+
+    @PageCacheDecorator(15, key_prefix='my_view', codes=(200, 404)):
+    def my_view(request, slug=None):
+        return HttpResponse()
+
+`PageCacheDecorator`'s constructor arguments:
+
+ * `cache_timeout`: integer, default TTL for cached entries. Required
+ * `cache`: Django cache backend name. If not specified, default cache
+   backend will be used
+ * `key_prefix`: this sting is always prepending resulting keys
+ * `methods`: a list/tuple with request methods that could be cached.
+   default: `('GET', )`
+ * `codes`: a list/tuple with cacheable response codes. default: `(200, )`
+ * `anonymous_only`: boolean selecting whether only anonmous requests
+   should be served from the cache/responses cached. Default: `True`
+ * `consider_scheme`: boolean selecting whether request scheme (http
+   or https) should be used for the key. default: `True`
+ * `consider_host`: boolean selecting whether requested Host: should
+   be used for the key. Default: `True`
+ * `key_function`: optionsl callable that should be used instead of
+   built-in key function.
+   Has to accept request as its only argument and return either
+   a string with the key or `None` if the request should not be cached.
+
 ## Known Limitations
 
- * Currently only supports cache methods `add`, `set`, `get`, `delete`,
+ * `CalmCache` currently only supports cache methods `add`, `set`, `get`, `delete`,
    `has_key` and `clear`
+ * Unlike `CacheMiddleware`, `PageCacheDecorator` does not respect `Vary:`
+   header returned from the view
+ * `PageCacheDecorator` does not respect `Cache-Control:` and `Pragma:` headers
+   in requests
+ * `PageCacheDecorator` does not check `Set-Cooke:` header in responses and
+   neither removes it before caching nor skips caching at all. Please be warned
 
 ## Legals
 
@@ -61,4 +102,3 @@ License: BSD 3-clause
 
 Copyright (c) 2013, Fairfax Media Limited
 All rights reserved.
-
