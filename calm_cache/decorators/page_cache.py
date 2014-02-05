@@ -3,16 +3,50 @@ from django.utils.cache import get_max_age, patch_response_headers
 
 
 class PageCacheDecorator(object):
+    """
+    A decorator that conditionally caches decorated view's response in
+    selected Django cache backend.
+
+    Example configuration:
+
+        from calm_cache.decorators import PageCacheDecorator
+
+        @PageCacheDecorator(15, key_prefix='my_view', codes=(200, 404))
+        def my_view(request, slug):
+            ...
+            return HttpResponse()
+    """
 
     def __init__(self, cache_timeout, **kwargs):
+        """
+        Accepted parameters:
+
+            `cache_timeout`: integer, default TTL for cached entries. Required
+            `cache`: Django cache backend name. If not specified, default cache
+                backend will be used
+            `key_prefix`: this sting is always prepending resulting keys
+            `methods`: a list/tuple with request methods that could be cached.
+                default: `('GET', )`
+            `codes`: a list/tuple with cacheable response codes.
+                default: `(200, )`
+            `anonymous_only`: boolean selecting whether only anonmous requests
+                should be served from the cache/responses cached.
+                Default: `True`
+            `consider_scheme`: boolean selecting whether request scheme (http
+                or https) should be used for the key. default: `True`
+            `consider_host`: boolean selecting whether requested Host: should
+                be used for the key. Default: `True`
+            `key_function`: optionsl callable that should be used instead of
+                built-in key function. Has to accept one argument: request
+        """
         self.cache_timeout = cache_timeout
         self.cache = get_cache(kwargs.get('cache', DEFAULT_CACHE_ALIAS))
         self.key_prefix = kwargs.get('key_prefix', '')
         self.methods = kwargs.get('methods', ('GET', ))
         self.codes = kwargs.get('codes', (200, ))
+        self.anonymous_only = kwargs.get('anonymous_only', True)
         self.consider_scheme = kwargs.get('consider_scheme', True)
         self.consider_host = kwargs.get('consider_host', True)
-        self.anonymous_only = kwargs.get('anonymous_only', True)
         self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
@@ -20,10 +54,22 @@ class PageCacheDecorator(object):
         return self.wrapper
 
     def _key_func(self, request):
+        """
+        Default key function.
+
+        Generated key is composed of parts of the request and never hashed
+        that could be a problem for certain backends under certain
+        circumstances. Use `calm_cache.contrib.sha1_key_func` key function
+        in your caching backed to ensure that keys always fit backend's 
+        requirements.
+
+        If returns 'None', the request shouldn't be cached at all.
+        """
         if self.consider_scheme:
             scheme = 'https' if request.is_secure() else 'http'
         else:
             scheme = ''
+        # Normalise Host: if we are going to use it
         host = request.get_host().lower() if self.consider_host else ''
         key_components = (
             self.key_prefix, request.method, scheme, host,
@@ -32,6 +78,11 @@ class PageCacheDecorator(object):
         return '#'.join(key_components)
 
     def should_fetch(self, request):
+        """
+        Returns `True` is this request should be tried against the cache.
+        In the oppisite case, it requrns `False` and wrapped view is executed
+        and returned immediately skipping any further processing.
+        """
         if not request.method in self.methods:
             return False
         if self.anonymous_only:
@@ -40,6 +91,9 @@ class PageCacheDecorator(object):
         return True
 
     def should_store(self, response):
+        """
+        Returns `True` if this response could be cached, `False` otherwise.
+        """
         if getattr(response, 'streaming', False):
             return False
         if not response.status_code in self.codes:
@@ -47,24 +101,36 @@ class PageCacheDecorator(object):
         return True
 
     def wrapper(self, request, *args, **kwargs):
+        """
+        Wraps decorated view conditionally performing response caching.
+        """
         cache_key = self.key_func(request)
         if not self.should_fetch(request) or cache_key is None:
+            # Return immediately
             return self.wrapped(request, *args, **kwargs)
         cached_response = self.cache.get(cache_key)
         if cached_response is not None:
+            # Return from cache if found
             return cached_response
 
+        # Execute the view and return the response if it shouldn't be cached
         response = self.wrapped(request, *args, **kwargs)
         if not self.should_store(response):
             return response
 
+        # Analyse `Cache-Control` from the response and set TTL accordingly
         timeout = get_max_age(response)
         if timeout is None:
+            # Default TTL
             timeout = self.cache_timeout
+        # Set `Cache-Control`, `Last-Modified` and `Expires` headers
         patch_response_headers(response, timeout)
 
+        # Store if we have any meaningful TTL
+        # Based on django.middleware.cache.UpdateCacheMiddleware
         if timeout:
             if hasattr(response, 'render') and callable(response.render):
+                # SimpleTemplateResponse and TemplateResponse are different
                 response.add_post_render_callback(
                     lambda r: self.cache.set(cache_key, response, timeout)
                 )
