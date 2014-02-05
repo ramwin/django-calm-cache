@@ -19,7 +19,7 @@ class PageCacheDecorator(object):
 
     def __init__(self, cache_timeout, **kwargs):
         """
-        Accepted parameters:
+        Args:
 
             `cache_timeout`: integer, default TTL for cached entries. Required
             `cache`: Django cache backend name. If not specified, default cache
@@ -37,7 +37,10 @@ class PageCacheDecorator(object):
             `consider_host`: boolean selecting whether requested Host: should
                 be used for the key. Default: `True`
             `key_function`: optionsl callable that should be used instead of
-                built-in key function. Has to accept one argument: request
+                built-in key function.
+                Has to accept request as its only argument and return either
+                a string with the key or `None` if the request
+                should not be cached.
         """
         self.cache_timeout = cache_timeout
         self.cache = get_cache(kwargs.get('cache', DEFAULT_CACHE_ALIAS))
@@ -60,10 +63,10 @@ class PageCacheDecorator(object):
         Generated key is composed of parts of the request and never hashed
         that could be a problem for certain backends under certain
         circumstances. Use `calm_cache.contrib.sha1_key_func` key function
-        in your caching backed to ensure that keys always fit backend's 
+        in your caching backed to ensure that keys always fit backend's
         requirements.
 
-        If returns 'None', the request shouldn't be cached at all.
+        Returns `None` if the request should not be cached
         """
         if self.consider_scheme:
             scheme = 'https' if request.is_secure() else 'http'
