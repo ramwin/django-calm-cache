@@ -27,7 +27,7 @@ def randomView(request, cache_seconds=None):
 
 
 def templateRandomView(request):
-    t = Template("%s" % random.randing(0, 1e6))
+    t = Template("%s" % random.randint(0, 1e6))
     return SimpleTemplateResponse(t)
 
 
@@ -112,15 +112,11 @@ class PageCacheTest(TestCase):
         decorated_view = decorator(randomView)
         # Confirm that the same URL is cached and returns the same content
         # And cache-related headers
-        request1 = self.factory.get('/')
+        request1 = self.factory.get('/?r=1')
         rsp1 = decorated_view(request1)
         time.sleep(1.1)
         rsp2 = decorated_view(request1)
         self.assertEqual(rsp1.content, rsp2.content)
-        self.assertEqual(rsp1.get('Cache-Control'), 'max-age=3')
-        for header in ('Last-Modified', 'Expires', 'Cache-Control'):
-            self.assertEqual(rsp1.get(header), rsp2.get(header))
-
         # Different URLs are cached under different keys
         request2 = self.factory.get('/?r=2')
         self.assertNotEqual(rsp1.content, decorated_view(request2).content)
@@ -129,16 +125,22 @@ class PageCacheTest(TestCase):
         # Perform the same tests for SimpleTemplateResponse
         decorator = PageCacheDecorator(3)
         decorated_view = decorator(templateRandomView)
-        request1 = self.factory.get('/')
+        request1 = self.factory.get('/?r=3')
         rsp1 = decorated_view(request1)
+        # Shouldn't be rendered yet
+        self.assertFalse(hasattr(rsp1, 'content'))
+        rsp1.render()
         time.sleep(1.1)
         rsp2 = decorated_view(request1)
+        # Should be already rendered because fetched from the cache
+        self.assertTrue(hasattr(rsp2, 'content'))
         self.assertEqual(rsp1.content, rsp2.content)
-        self.assertEqual(rsp1.get('Cache-Control'), 'max-age=3')
-        for header in ('Last-Modified', 'Expires', 'Cache-Control'):
-            self.assertEqual(rsp1.get(header), rsp2.get(header))
-        request2 = self.factory.get('/?r=2')
-        self.assertNotEqual(rsp1.content, decorated_view(request2).content)
+        request2 = self.factory.get('/?r=4')
+        rsp3 = decorated_view(request2)
+        # Shouldn't be rendered
+        self.assertFalse(hasattr(rsp3, 'content'))
+        rsp3.render()
+        self.assertNotEqual(rsp1.content, rsp3.content)
 
     def test_uncacheable_requests(self):
         # Test authenticated requests (shouldn't cache)
@@ -153,19 +155,3 @@ class PageCacheTest(TestCase):
         request = self.factory.head('/')
         self.assertNotEqual(decorated_view(request).content,
                             decorated_view(request).content)
-
-    def test_cache_control(self):
-        decorator = PageCacheDecorator(3600)
-        decorated_view = decorator(randomView)
-        request = self.factory.get('/?t1')
-        # Set max-age to 0 (i.e. "no cache")
-        self.assertNotEqual(decorated_view(request, 0).content,
-                            decorated_view(request, 0).content)
-        # Check if Cache-Control could be controlled from the view
-        request = self.factory.get('/?t2')
-        # First uncached response is controlled by the view's Cache-Contol:
-        self.assertEqual(decorated_view(request, 10).get('Cache-Control'),
-                'max-age=10')
-        # And check if Cache-Control value is cached from the previous request
-        self.assertEqual(decorated_view(request, 3).get('Cache-Control'),
-                'max-age=10')

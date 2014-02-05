@@ -121,22 +121,13 @@ class PageCacheDecorator(object):
         if not self.should_store(response):
             return response
 
-        # Analyse `Cache-Control` from the response and set TTL accordingly
-        timeout = get_max_age(response)
-        if timeout is None:
-            # Default TTL
-            timeout = self.cache_timeout
-        # Set `Cache-Control`, `Last-Modified` and `Expires` headers
-        patch_response_headers(response, timeout)
-
-        # Store if we have any meaningful TTL
         # Based on django.middleware.cache.UpdateCacheMiddleware
-        if timeout:
-            if hasattr(response, 'render') and callable(response.render):
-                # SimpleTemplateResponse and TemplateResponse are different
-                response.add_post_render_callback(
-                    lambda r: self.cache.set(cache_key, response, timeout)
-                )
-            else:
-                self.cache.set(cache_key, response, timeout)
+        if hasattr(response, 'render') and callable(response.render):
+            # SimpleTemplateResponse and TemplateResponse are different
+            response.add_post_render_callback(
+                lambda r: self.cache.set(cache_key, response,
+                                         self.cache_timeout)
+            )
+        else:
+            self.cache.set(cache_key, response, self.cache_timeout)
         return response
