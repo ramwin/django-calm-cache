@@ -72,12 +72,12 @@ Example usage:
    backend will be used
  * `key_prefix`: this sting is always prepending resulting keys
  * `methods`: a list/tuple with request methods that could be cached.
-   default: `('GET', )`
- * `codes`: a list/tuple with cacheable response codes. default: `(200, )`
+   Default: `('GET', )`
+ * `codes`: a list/tuple with cacheable response codes. Default: `(200, )`
  * `anonymous_only`: boolean selecting whether only anonmous requests
    should be served from the cache/responses cached. Default: `True`
  * `consider_scheme`: boolean selecting whether request scheme (http
-   or https) should be used for the key. default: `True`
+   or https) should be used for the key. Default: `True`
  * `consider_host`: boolean selecting whether requested Host: should
    be used for the key. Default: `True`
  * `key_function`: optionsl callable that should be used instead of
