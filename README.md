@@ -59,7 +59,7 @@ Now relax knowing your site's caching won't fall over at the first sign of susta
 Example usage:
 
     :::python
-    from calm_cache.decorated impoty PageCacheDecorator
+    from calm_cache.decorated import PageCacheDecorator
 
     @PageCacheDecorator(15, key_prefix='my_view', codes=(200, 404)):
     def my_view(request, slug=None):
@@ -80,7 +80,7 @@ Example usage:
    or https) should be used for the key. Default: `True`
  * `consider_host`: boolean selecting whether requested Host: should
    be used for the key. Default: `True`
- * `key_function`: optionsl callable that should be used instead of
+ * `key_function`: optional callable that should be used instead of
    built-in key function.
    Has to accept request as its only argument and return either
    a string with the key or `None` if the request should not be cached.
@@ -93,12 +93,12 @@ Example usage:
    header returned from the view
  * `PageCacheDecorator` does not respect `Cache-Control:` and `Pragma:` headers
    in requests
- * `PageCacheDecorator` does not check `Set-Cooke:` header in responses and
+ * `PageCacheDecorator` does not check `Set-Cookie:` header in responses and
    neither removes it before caching nor skips caching at all. Please be warned
 
 ## Legals
 
 License: BSD 3-clause
 
-Copyright (c) 2013, Fairfax Media Limited
+Copyright (c) 2014, Fairfax Media Limited
 All rights reserved.

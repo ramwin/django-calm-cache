@@ -24,12 +24,12 @@ class PageCacheDecorator(object):
             `cache_timeout`: integer, default TTL for cached entries. Required
             `cache`: Django cache backend name. If not specified, default cache
                 backend will be used
-            `key_prefix`: this sting is always prepending resulting keys
+            `key_prefix`: this string is always prepending resulting keys
             `methods`: a list/tuple with request methods that could be cached.
                 Default: `('GET', )`
             `codes`: a list/tuple with cacheable response codes.
                 Default: `(200, )`
-            `anonymous_only`: boolean selecting whether only anonmous requests
+            `anonymous_only`: boolean selecting whether only anonymous requests
                 should be served from the cache/responses cached.
                 Default: `True`
             `consider_scheme`: boolean selecting whether request scheme (http
@@ -82,9 +82,9 @@ class PageCacheDecorator(object):
 
     def should_fetch(self, request):
         """
-        Returns `True` is this request should be tried against the cache.
+        Returns `True` if this request should be tried against the cache.
         In the opposite case, it returns `False` and wrapped view is executed
-        and returned immediately skipping any further processing.
+        and returned immediately, skipping any further processing.
         """
         if not request.method in self.methods:
             return False
@@ -105,7 +105,7 @@ class PageCacheDecorator(object):
 
     def wrapper(self, request, *args, **kwargs):
         """
-        Wraps decorated view conditionally performing response caching.
+        Wraps decorated view, conditionally performing response caching.
         """
         cache_key = self.key_func(request)
         if not self.should_fetch(request) or cache_key is None:
