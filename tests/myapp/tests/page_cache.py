@@ -114,7 +114,6 @@ class PageCacheTest(TestCase):
     def test_caching_decorator(self):
         decorated_view = page_cache(randomView)
         # Confirm that the same URL is cached and returns the same content
-        # And cache-related headers
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp1 = decorated_view(request)
         time.sleep(0.1)
@@ -157,8 +156,7 @@ class PageCacheTest(TestCase):
 
     def test_uncacheable_requests(self):
         # Test authenticated requests (shouldn't cache)
-        decorator = PageCacheDecorator(3)
-        decorated_view = decorator(randomView)
+        decorated_view = page_cache(randomView)
         request = self.factory.get('/')
         request.user = User.objects.create_user('u1', 'u1@u1.com', 'u1')
         self.assertNotEqual(decorated_view(request).content,
