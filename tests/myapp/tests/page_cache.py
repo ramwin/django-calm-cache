@@ -65,11 +65,11 @@ class PageCacheTest(TestCase):
                 '#GET#http#testserver#/url10/?k10=v10')
         # Do not consider scheme
         self.assertEqual(
-            PageCacheDecorator(1, key_prefix='p', consider_scheme=False).key_func(request),
+            PageCacheDecorator(1, key_prefix='p', include_scheme=False).key_func(request),
             'p#GET##testserver#/url10/?k10=v10')
         # Do not consider host
         self.assertEqual(
-            PageCacheDecorator(1, key_prefix='p', consider_host=False).key_func(request),
+            PageCacheDecorator(1, key_prefix='p', include_host=False).key_func(request),
             'p#GET#http##/url10/?k10=v10')
 
     def test_user_supplied_key_function(self):

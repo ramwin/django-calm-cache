@@ -76,9 +76,9 @@ Example usage:
  * `codes`: a list/tuple with cacheable response codes. Default: `(200, )`
  * `anonymous_only`: boolean selecting whether only anonmous requests
    should be served from the cache/responses cached. Default: `True`
- * `consider_scheme`: boolean selecting whether request scheme (http
+ * `include_scheme`: boolean selecting whether request scheme (http
    or https) should be used for the key. Default: `True`
- * `consider_host`: boolean selecting whether requested Host: should
+ * `include_host`: boolean selecting whether requested Host: should
    be used for the key. Default: `True`
  * `key_function`: optional callable that should be used instead of
    built-in key function.

@@ -32,9 +32,9 @@ class PageCacheDecorator(object):
             `anonymous_only`: boolean selecting whether only anonymous requests
                 should be served from the cache/responses cached.
                 Default: `True`
-            `consider_scheme`: boolean selecting whether request scheme (http
+            `include_scheme`: boolean selecting whether request scheme (http
                 or https) should be used for the key. Default: `True`
-            `consider_host`: boolean selecting whether requested Host: should
+            `include_host`: boolean selecting whether requested Host: should
                 be used for the key. Default: `True`
             `key_function`: optionsl callable that should be used instead of
                 built-in key function.
@@ -48,8 +48,8 @@ class PageCacheDecorator(object):
         self.methods = kwargs.get('methods', ('GET', ))
         self.codes = kwargs.get('codes', (200, ))
         self.anonymous_only = kwargs.get('anonymous_only', True)
-        self.consider_scheme = kwargs.get('consider_scheme', True)
-        self.consider_host = kwargs.get('consider_host', True)
+        self.include_scheme = kwargs.get('include_scheme', True)
+        self.include_host = kwargs.get('include_host', True)
         self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
@@ -68,12 +68,12 @@ class PageCacheDecorator(object):
 
         Returns `None` if the request should not be cached
         """
-        if self.consider_scheme:
+        if self.include_scheme:
             scheme = 'https' if request.is_secure() else 'http'
         else:
             scheme = ''
         # Normalise Host: if we are going to use it
-        host = request.get_host().lower() if self.consider_host else ''
+        host = request.get_host().lower() if self.include_host else ''
         key_components = (
             self.key_prefix, request.method, scheme, host,
             request.get_full_path()
