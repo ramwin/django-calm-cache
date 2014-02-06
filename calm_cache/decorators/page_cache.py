@@ -1,5 +1,5 @@
 from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
-from django.utils.cache import get_max_age, patch_response_headers
+from django.utils.http import http_date
 
 
 class PageCacheDecorator(object):
@@ -120,6 +120,10 @@ class PageCacheDecorator(object):
         response = self.wrapped(request, *args, **kwargs)
         if not self.should_store(response):
             return response
+
+        # Set Last-Modified to the response, if it's not set already:
+        if not response.has_header('Last-Modified'):
+            response['Last-Modified'] = http_date()
 
         # Based on django.middleware.cache.UpdateCacheMiddleware
         if hasattr(response, 'render') and callable(response.render):
