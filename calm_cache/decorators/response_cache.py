@@ -2,16 +2,16 @@ from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
 from django.utils.http import http_date
 
 
-class PageCacheDecorator(object):
+class ResponseCache(object):
     """
     A decorator that conditionally caches decorated view's response in
     selected Django cache backend.
 
     Example configuration:
 
-        from calm_cache.decorators import PageCacheDecorator
+        from calm_cache.decorators import ResponseCache
 
-        @PageCacheDecorator(15, key_prefix='my_view', codes=(200, 404))
+        @ResponseCache(15, key_prefix='my_view', codes=(200, 404))
         def my_view(request, slug):
             ...
             return HttpResponse()

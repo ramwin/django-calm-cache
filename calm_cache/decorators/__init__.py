@@ -1,1 +1,1 @@
-from .page_cache import PageCacheDecorator
+from .response_cache import ResponseCache

@@ -11,7 +11,7 @@ from django.template import Template
 from django.template.response import SimpleTemplateResponse
 from django.core.cache import get_cache
 
-from calm_cache.decorators import PageCacheDecorator
+from calm_cache.decorators import ResponseCache
 
 random.seed()
 
@@ -32,16 +32,16 @@ def templateRandomView(request):
     t = Template("%s" % random.randint(0, 1e6))
     return SimpleTemplateResponse(t)
 
-page_cache = PageCacheDecorator(0.3, cache='testcache')
+rsp_cache = ResponseCache(0.3, cache='testcache')
 
-class PageCacheTest(TestCase):
+class ResponseCacheTest(TestCase):
 
     def setUp(self):
         self.factory = RequestFactory()
         get_cache('testcache').clear()
 
     def test_default_key_function(self):
-        cache = PageCacheDecorator(1, key_prefix='p')
+        cache = ResponseCache(1, key_prefix='p')
         # Plain test with all defaults
         self.assertEqual(cache.key_func(self.factory.get('/url1/?k1=v1')),
                          'p#GET#http#testserver#/url1/?k1=v1')
@@ -61,30 +61,30 @@ class PageCacheTest(TestCase):
     def test_default_key_function_parts_omission(self):
         request = self.factory.get('/url10/?k10=v10')
         # Empty prefix
-        self.assertEqual(PageCacheDecorator(1).key_func(request),
+        self.assertEqual(ResponseCache(1).key_func(request),
                 '#GET#http#testserver#/url10/?k10=v10')
         # Do not consider scheme
         self.assertEqual(
-            PageCacheDecorator(1, key_prefix='p', include_scheme=False).key_func(request),
+            ResponseCache(1, key_prefix='p', include_scheme=False).key_func(request),
             'p#GET##testserver#/url10/?k10=v10')
         # Do not consider host
         self.assertEqual(
-            PageCacheDecorator(1, key_prefix='p', include_host=False).key_func(request),
+            ResponseCache(1, key_prefix='p', include_host=False).key_func(request),
             'p#GET#http##/url10/?k10=v10')
 
     def test_user_supplied_key_function(self):
         # Test dumb user supplied key function
-        cache = PageCacheDecorator(1, key_func=lambda r: "KeyValue")
+        cache = ResponseCache(1, key_func=lambda r: "KeyValue")
         request = self.factory.get('/')
         self.assertEqual(cache.key_func(request), 'KeyValue')
 
     def test_should_fetch(self):
         # test default behavious: GETs only
-        cache = PageCacheDecorator(1)
+        cache = ResponseCache(1)
         self.assertTrue(cache.should_fetch(self.factory.get('/')))
         self.assertFalse(cache.should_fetch(self.factory.head('/')))
         # Allow HEAD too
-        cache = PageCacheDecorator(1, methods=('GET', 'HEAD'))
+        cache = ResponseCache(1, methods=('GET', 'HEAD'))
         self.assertTrue(cache.should_fetch(self.factory.head('/')))
         # Check authenticated requests (shouldn't cache by default)
         request = self.factory.get('/')
@@ -92,13 +92,13 @@ class PageCacheTest(TestCase):
         self.assertFalse(cache.should_fetch(request))
         # This instance should ignore authenticated user
         self.assertTrue(
-            PageCacheDecorator(1, anonymous_only=False).should_fetch(request))
+            ResponseCache(1, anonymous_only=False).should_fetch(request))
         # Anonymous' responses should be cached
         request.user = AnonymousUser()
         self.assertTrue(cache.should_fetch(request))
 
     def test_should_store(self):
-        cache = PageCacheDecorator(1)
+        cache = ResponseCache(1)
         # Check normal response (200)
         self.assertTrue(cache.should_store(HttpResponse()))
         # Check some non-200 response codes
@@ -107,12 +107,12 @@ class PageCacheTest(TestCase):
 
     @skipUnless(StreamingHttpResponse, "Too old for StreamingHttpResponse?")
     def test_should_store_streaming(self):
-        cache = PageCacheDecorator(1)
+        cache = ResponseCache(1)
         # StreamingHttpResponse is never cached
         self.assertFalse(cache.should_store(StreamingHttpResponse()))
 
     def test_caching_decorator(self):
-        decorated_view = page_cache(randomView)
+        decorated_view = rsp_cache(randomView)
         # Confirm that the same URL is cached and returns the same content
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp1 = decorated_view(request)
@@ -127,7 +127,7 @@ class PageCacheTest(TestCase):
 
     def test_caching_template_response(self):
         # Perform the same tests for SimpleTemplateResponse
-        decorated_view = page_cache(templateRandomView)
+        decorated_view = rsp_cache(templateRandomView)
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp1 = decorated_view(request)
         # Shouldn't be rendered yet
@@ -147,7 +147,7 @@ class PageCacheTest(TestCase):
         self.assertNotEqual(rsp1.content, rsp3.content)
 
     def test_caching_decorator_different_urls(self):
-        decorated_view = page_cache(randomView)
+        decorated_view = rsp_cache(randomView)
         # Different URLs are cached under different keys
         request1 = self.factory.get('/%i' % random.randint(1,1e6))
         request2 = self.factory.get('/%i' % random.randint(1,1e6))
@@ -156,7 +156,7 @@ class PageCacheTest(TestCase):
 
     def test_uncacheable_requests(self):
         # Test authenticated requests (shouldn't cache)
-        decorated_view = page_cache(randomView)
+        decorated_view = rsp_cache(randomView)
         request = self.factory.get('/')
         request.user = User.objects.create_user('u1', 'u1@u1.com', 'u1')
         self.assertNotEqual(decorated_view(request).content,
@@ -168,14 +168,14 @@ class PageCacheTest(TestCase):
                             decorated_view(request).content)
 
     def test_last_modified_default(self):
-        decorated_view = page_cache(randomView)
+        decorated_view = rsp_cache(randomView)
         # Last-Modified has to be set to "now"
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp = decorated_view(request)
         self.assertEqual(rsp.get('Last-Modified'), http_date())
 
     def test_last_modified_from_response(self):
-        decorated_view = page_cache(randomView)
+        decorated_view = rsp_cache(randomView)
         # Last-Modified has to be set to whatever was in the original response
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp = decorated_view(request, 123456)
