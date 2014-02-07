@@ -13,7 +13,7 @@ bucket loads of traffic.
    data compression provided by [python-memcached](ftp://ftp.tummy.com/pub/python-memcached/)
    and [pylibmc](http://sendapatch.se/projects/pylibmc/) respectively
  * `PyLibMCCache` is extended to support binary protocol
- * `PageCacheDecorator` that could be applied to any Django view and
+ * `ResponseCache` that could be applied to any Django view and
    conditionally cache responses just like Django standard `CacheMiddleware`
    and `cache_page` do, but more configurable, explicit and extensible
 
@@ -59,13 +59,13 @@ Now relax knowing your site's caching won't fall over at the first sign of susta
 Example usage:
 
     :::python
-    from calm_cache.decorated import PageCacheDecorator
+    from calm_cache.decorated import ResponseCache
 
-    @PageCacheDecorator(15, key_prefix='my_view', codes=(200, 404)):
+    @ResponseCache(15, key_prefix='my_view', codes=(200, 404)):
     def my_view(request, slug=None):
         return HttpResponse()
 
-`PageCacheDecorator`'s constructor arguments:
+`ResponseCache`'s constructor arguments:
 
  * `cache_timeout`: integer, default TTL for cached entries. Required
  * `cache`: Django cache backend name. If not specified, default cache
@@ -89,11 +89,11 @@ Example usage:
 
  * `CalmCache` currently only supports cache methods `add`, `set`, `get`, `delete`,
    `has_key` and `clear`
- * Unlike `CacheMiddleware`, `PageCacheDecorator` does not respect `Vary:`
+ * Unlike `CacheMiddleware`, `ResponseCache` does not respect `Vary:`
    header returned from the view
- * `PageCacheDecorator` does not respect `Cache-Control:` and `Pragma:` headers
+ * `ResponseCache` does not respect `Cache-Control:` and `Pragma:` headers
    in requests
- * `PageCacheDecorator` does not check `Set-Cookie:` header in responses and
+ * `ResponseCache` does not check `Set-Cookie:` header in responses and
    neither removes it before caching nor skips caching at all. Please be warned
 
 ## Legals
