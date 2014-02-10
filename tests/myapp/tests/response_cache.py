@@ -21,10 +21,13 @@ except ImportError:
     StreamingHttpResponse = None
 
 
-def randomView(request, last_modified=None):
+def randomView(request, last_modified=None, cookies=None):
     response = HttpResponse(str(random.randint(0,1e6)))
     if last_modified is not None:
         response['Last-Modified'] = http_date(last_modified)
+    if cookies:
+        for k, v in cookies.items():
+            response.set_cookie(k, v)
     return response
 
 
@@ -180,3 +183,11 @@ class ResponseCacheTest(TestCase):
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp = decorated_view(request, 123456)
         self.assertEqual(rsp.get('Last-Modified'), http_date(123456))
+
+    def test_not_caching_set_cookie(self):
+        decorated_view = rsp_cache(randomView)
+        # Response to the same request, even with the same cookie set is not cached
+        request = self.factory.get('/%i' % random.randint(1, 1e6))
+        rsp1 = decorated_view(request, cookies={'c': 'v'})
+        rsp2 = decorated_view(request, cookies={'c': 'v'})
+        self.assertEqual(rsp1.content, rsp2.content)

@@ -101,6 +101,8 @@ class ResponseCache(object):
             return False
         if not response.status_code in self.codes:
             return False
+        if response.has_header('Set-Cookie'):
+            return False
         return True
 
     def wrapper(self, request, *args, **kwargs):
