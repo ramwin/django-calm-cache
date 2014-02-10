@@ -17,6 +17,10 @@ class ResponseCache(object):
             return HttpResponse()
     """
 
+    CACHE_REQ_METHDODS = ('GET', )
+    CACHE_RSP_CODES = (200, )
+    NOCACHE_RSP_HEADERS = ('Set-Cookie', 'Vary')
+
     def __init__(self, cache_timeout, **kwargs):
         """
         Args:
@@ -29,6 +33,8 @@ class ResponseCache(object):
                 Default: `('GET', )`
             `codes`: a list/tuple with cacheable response codes.
                 Default: `(200, )`
+            `nocache_rsp`: a list of response headers that prevents response
+                from being cached. Default: ('Set-Cookie', 'Vary')
             `anonymous_only`: boolean selecting whether only anonymous requests
                 should be served from the cache/responses cached.
                 Default: `True`
@@ -36,7 +42,7 @@ class ResponseCache(object):
                 or https) should be used for the key. Default: `True`
             `include_host`: boolean selecting whether requested Host: should
                 be used for the key. Default: `True`
-            `key_function`: optionsl callable that should be used instead of
+            `key_function`: optional callable that should be used instead of
                 built-in key function.
                 Has to accept request as its only argument and return either
                 a string with the key or `None` if the request
@@ -45,8 +51,9 @@ class ResponseCache(object):
         self.cache_timeout = cache_timeout
         self.cache = get_cache(kwargs.get('cache', DEFAULT_CACHE_ALIAS))
         self.key_prefix = kwargs.get('key_prefix', '')
-        self.methods = kwargs.get('methods', ('GET', ))
-        self.codes = kwargs.get('codes', (200, ))
+        self.methods = kwargs.get('methods', self.CACHE_REQ_METHDODS)
+        self.codes = kwargs.get('codes', self.CACHE_RSP_CODES)
+        self.nocache_rsp = kwargs.get('nocache_rsp', self.NOCACHE_RSP_HEADERS)
         self.anonymous_only = kwargs.get('anonymous_only', True)
         self.include_scheme = kwargs.get('include_scheme', True)
         self.include_host = kwargs.get('include_host', True)
@@ -101,8 +108,9 @@ class ResponseCache(object):
             return False
         if not response.status_code in self.codes:
             return False
-        if response.has_header('Set-Cookie'):
-            return False
+        for header in self.nocache_rsp:
+            if response.has_header(header):
+                return False
         return True
 
     def wrapper(self, request, *args, **kwargs):
