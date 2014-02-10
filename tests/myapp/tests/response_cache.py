@@ -7,8 +7,9 @@ from django.utils.unittest import skipUnless
 from django.utils.http import http_date
 from django.http import HttpResponse
 from django.contrib.auth.models import User, AnonymousUser
-from django.template import Template
+from django.template import Template, RequestContext
 from django.template.response import SimpleTemplateResponse
+
 from django.core.cache import get_cache
 
 from calm_cache.decorators import ResponseCache
@@ -36,7 +37,14 @@ def templateRandomView(request):
     t = Template("%s" % random.randint(0, 1e6))
     return SimpleTemplateResponse(t)
 
+
+def csrfView(request):
+    t = Template("%s: {{ csrf_token }}" % random.randint(0, 1e6))
+    return HttpResponse(t.render(RequestContext(request)))
+
+
 rsp_cache = ResponseCache(0.3, cache='testcache')
+
 
 class ResponseCacheTest(TestCase):
 
@@ -104,16 +112,19 @@ class ResponseCacheTest(TestCase):
     def test_should_store(self):
         cache = ResponseCache(1)
         # Check normal response (200)
-        self.assertTrue(cache.should_store(HttpResponse()))
+        self.assertTrue(cache.should_store(self.factory.get('/'),
+                                           HttpResponse()))
         # Check some non-200 response codes
         for code in (201, 404, 403, 500, 502, 503, 301, 302):
-            self.assertFalse(cache.should_store(HttpResponse(status=code)))
+            self.assertFalse(cache.should_store(self.factory.get('/'),
+                             HttpResponse(status=code)))
 
     @skipUnless(StreamingHttpResponse, "Too old for StreamingHttpResponse?")
     def test_should_store_streaming(self):
         cache = ResponseCache(1)
         # StreamingHttpResponse is never cached
-        self.assertFalse(cache.should_store(StreamingHttpResponse()))
+        self.assertFalse(cache.should_store(self.factory.get('/'),
+                         StreamingHttpResponse()))
 
     def test_caching_decorator(self):
         decorated_view = rsp_cache(randomView)
@@ -226,3 +237,13 @@ class ResponseCacheTest(TestCase):
         self.assertNotEqual(rsp1.content, rsp2.content)
         self.assertTrue(rsp1.has_header('Hdr1'))
         self.assertFalse(rsp2.has_header('Hdr1'))
+
+    def test_not_caching_csrf_response(self):
+        decorated_view = rsp_cache(csrfView)
+        i = random.randint(1, 1e6)
+        # Responses that have CSRF token used should not be cached
+        request1 = self.factory.get('/%i' % i)
+        request2 = self.factory.get('/%i' % i)
+        rsp1 = decorated_view(request1)
+        rsp2 = decorated_view(request2)
+        self.assertNotEqual(rsp1.content, rsp2.content)

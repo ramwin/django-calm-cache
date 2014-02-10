@@ -100,7 +100,7 @@ class ResponseCache(object):
                 return False
         return True
 
-    def should_store(self, response):
+    def should_store(self, request, response):
         """
         Returns `True` if this response could be cached, `False` otherwise.
         """
@@ -111,6 +111,8 @@ class ResponseCache(object):
         for header in self.nocache_rsp:
             if response.has_header(header):
                 return False
+        if request.META.get('CSRF_COOKIE_USED', False):
+            return False
         return True
 
     def wrapper(self, request, *args, **kwargs):
@@ -128,7 +130,7 @@ class ResponseCache(object):
 
         # Execute the view and return the response if it shouldn't be cached
         response = self.wrapped(request, *args, **kwargs)
-        if not self.should_store(response):
+        if not self.should_store(request, response):
             return response
 
         # Set Last-Modified to the response, if it's not set already:
