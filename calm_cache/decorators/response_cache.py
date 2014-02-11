@@ -1,5 +1,6 @@
 from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
 from django.utils.http import http_date
+from django.conf import settings
 
 
 class ResponseCache(object):
@@ -17,9 +18,14 @@ class ResponseCache(object):
             return HttpResponse()
     """
 
+    # Defaults
+    ANONYMOUS_REQ_ONLY = True
     CACHE_REQ_METHDODS = ('GET', )
     CACHE_RSP_CODES = (200, )
     NOCACHE_RSP_HEADERS = ('Set-Cookie', 'Vary')
+    KEY_PREFIX = ''
+    KEY_SCHEME = True
+    KEY_HOST = True
 
     def __init__(self, cache_timeout, **kwargs):
         """
@@ -50,13 +56,25 @@ class ResponseCache(object):
         """
         self.cache_timeout = cache_timeout
         self.cache = get_cache(kwargs.get('cache', DEFAULT_CACHE_ALIAS))
-        self.key_prefix = kwargs.get('key_prefix', '')
-        self.methods = kwargs.get('methods', self.CACHE_REQ_METHDODS)
-        self.codes = kwargs.get('codes', self.CACHE_RSP_CODES)
-        self.nocache_rsp = kwargs.get('nocache_rsp', self.NOCACHE_RSP_HEADERS)
-        self.anonymous_only = kwargs.get('anonymous_only', True)
-        self.include_scheme = kwargs.get('include_scheme', True)
-        self.include_host = kwargs.get('include_host', True)
+        self.key_prefix = kwargs.get(
+            'key_prefix', getattr(settings, 'CCRC_KEY_PREFIX', self.KEY_PREFIX))
+        self.methods = kwargs.get(
+            'methods', getattr(settings, 'CCRC_CACHE_REQ_METHDODS',
+                               self.CACHE_REQ_METHDODS))
+        self.codes = kwargs.get(
+            'codes', getattr(settings, 'CCRC_CACHE_RSP_CODES',
+                             self.CACHE_RSP_CODES))
+        self.nocache_rsp = kwargs.get(
+            'nocache_rsp', getattr(settings, 'CCRC_NOCACHE_RSP_HEADERS',
+                                   self.NOCACHE_RSP_HEADERS))
+        self.anonymous_only = kwargs.get(
+            'anonymous_only', getattr(settings, 'CCRC_ANONYMOUS_REQ_ONLY',
+                                      self.ANONYMOUS_REQ_ONLY))
+        self.include_scheme = kwargs.get(
+            'include_scheme', getattr(settings, 'CCRC_KEY_SCHEME',
+                                      self.KEY_SCHEME))
+        self.include_host = kwargs.get(
+            'include_host', getattr(settings, 'CCRC_KEY_HOST', self.KEY_HOST))
         self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
