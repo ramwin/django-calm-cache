@@ -20,6 +20,8 @@ class ResponseCache(object):
 
     # Defaults
     ANONYMOUS_REQ_ONLY = True
+    CACHE_REQ_COOKIES = False
+    EXCLUDE_REQ_COOKIES = ()
     CACHE_REQ_METHDODS = ('GET', )
     CACHE_RSP_CODES = (200, )
     NOCACHE_RSP_HEADERS = ('Set-Cookie', 'Vary')
@@ -70,6 +72,12 @@ class ResponseCache(object):
         self.anonymous_only = kwargs.get(
             'anonymous_only', getattr(settings, 'CCRC_ANONYMOUS_REQ_ONLY',
                                       self.ANONYMOUS_REQ_ONLY))
+        self.cache_cookies = kwargs.get(
+            'cache_cookies', getattr(settings, 'CCRC_CACHE_REQ_COOKIES',
+                                     self.CACHE_REQ_COOKIES))
+        self.exclude_cookies = kwargs.get(
+            'exclude_cookies', getattr(settings, 'CCRC_EXCLUDE_REQ_COOKIES',
+                                      self.EXCLUDE_REQ_COOKIES))
         self.include_scheme = kwargs.get(
             'include_scheme', getattr(settings, 'CCRC_KEY_SCHEME',
                                       self.KEY_SCHEME))
@@ -116,6 +124,14 @@ class ResponseCache(object):
         if self.anonymous_only:
             if hasattr(request, 'user') and not request.user.is_anonymous():
                 return False
+        if not self.cache_cookies:
+            for cookie in request.COOKIES:
+                if cookie not in self.exclude_cookies:
+                    return False
+        else:
+            for cookie in request.COOKIES:
+                if cookie in self.exclude_cookies:
+                    return False
         return True
 
     def should_store(self, request, response):

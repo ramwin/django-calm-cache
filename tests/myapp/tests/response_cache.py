@@ -263,9 +263,54 @@ class ResponseCacheTest(TestCase):
         rsp2.render()
         self.assertNotEqual(rsp1.content, rsp2.content)
 
+    def test_not_caching_req_cookies(self):
+        decorated_view = rsp_cache(randomView)
+        # By default, requests with cookies aren't cached
+        request = self.random_get()
+        request.COOKIES['c1'] = 'v1'
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertNotEqual(rsp1.content, rsp2.content)
+
+    def test_whitelisted_req_cookies(self):
+        cache = ResponseCache(0.3, cache='testcache', exclude_cookies=('c1',))
+        decorated_view = cache(randomView)
+        # This cookie does not prevent request from being cached
+        request = self.random_get()
+        request.COOKIES['c1'] = 'v1'
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertEqual(rsp1.content, rsp2.content)
+
+    def test_caching_req_cookies(self):
+        cache = ResponseCache(0.3, cache='testcache', cache_cookies=True)
+        decorated_view = cache(randomView)
+        # This request should be cached with any cookie set
+        request = self.random_get()
+        request.COOKIES['c1'] = 'v1'
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertEqual(rsp1.content, rsp2.content)
+
+    def test_blacklisted_req_cookies(self):
+        cache = ResponseCache(0.3, cache='testcache', cache_cookies=True,
+                              exclude_cookies=('c1',))
+        decorated_view = cache(randomView)
+        # This cookie prevents this request from being cached,
+        # though generally cookies are allowed
+        request = self.random_get()
+        request.COOKIES['c1'] = 'v1'
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertNotEqual(rsp1.content, rsp2.content)
+
     def test_django_settings(self):
         with self.settings(CCRC_KEY_PREFIX='foobar'):
             self.assertEqual(ResponseCache(1).key_prefix, 'foobar')
+        with self.settings(CCRC_CACHE_REQ_COOKIES=True):
+            self.assertTrue(ResponseCache(1).cache_cookies)
+        with self.settings(CCRC_EXCLUDE_REQ_COOKIES=('c1', 'c2')):
+            self.assertEqual(ResponseCache(1).exclude_cookies, ('c1', 'c2'))
         with self.settings(CCRC_CACHE_REQ_METHDODS=('POST',)):
             self.assertEqual(ResponseCache(1).methods, ('POST',))
         with self.settings(CCRC_CACHE_RSP_CODES=(999,)):
