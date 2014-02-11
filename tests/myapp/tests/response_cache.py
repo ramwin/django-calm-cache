@@ -1,5 +1,5 @@
-import random
 import time
+from uuid import uuid4
 
 from django.test import TestCase
 from django.test.client import RequestFactory
@@ -19,10 +19,9 @@ try:
 except ImportError:
     StreamingHttpResponse = None
 
-random.seed()
 
 def randomView(request, last_modified=None, headers=None):
-    response = HttpResponse(str(random.randint(0,1e6)))
+    response = HttpResponse(str(uuid4()))
     if last_modified is not None:
         response['Last-Modified'] = http_date(last_modified)
     if headers:
@@ -32,15 +31,15 @@ def randomView(request, last_modified=None, headers=None):
     return response
 
 def randomTemplateView(request):
-    t = Template("%s" % random.randint(0, 1e6))
+    t = Template("%s" % uuid4())
     return TemplateResponse(request, t)
 
 def csrfView(request):
-    t = Template("%s: {{ csrf_token }}" % random.randint(0, 1e6))
+    t = Template("%s: {{ csrf_token }}" % uuid4())
     return HttpResponse(t.render(RequestContext(request)))
 
 def csrfTemplateView(request):
-    t = Template("%s: {{ csrf_token }}" % random.randint(0, 1e6))
+    t = Template("%s: {{ csrf_token }}" % uuid4())
     return TemplateResponse(request, t)
 
 
@@ -52,6 +51,9 @@ class ResponseCacheTest(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         get_cache('testcache').clear()
+
+    def random_get(self):
+        return self.factory.get('/%s' % uuid4())
 
     def test_default_key_function(self):
         cache = ResponseCache(1, key_prefix='p')
@@ -130,7 +132,7 @@ class ResponseCacheTest(TestCase):
     def test_caching_decorator(self):
         decorated_view = rsp_cache(randomView)
         # Confirm that the same URL is cached and returns the same content
-        request = self.factory.get('/%i' % random.randint(1,1e6))
+        request = self.random_get()
         rsp1 = decorated_view(request)
         time.sleep(0.1)
         # This should be still cached
@@ -144,7 +146,7 @@ class ResponseCacheTest(TestCase):
     def test_caching_template_response(self):
         # Perform the same tests for SimpleTemplateResponse
         decorated_view = rsp_cache(randomTemplateView)
-        request = self.factory.get('/%i' % random.randint(1,1e6))
+        request = self.random_get()
         rsp1 = decorated_view(request)
         # Shouldn't be rendered yet
         self.assertFalse(hasattr(rsp1, 'content'))
@@ -165,8 +167,8 @@ class ResponseCacheTest(TestCase):
     def test_caching_decorator_different_urls(self):
         decorated_view = rsp_cache(randomView)
         # Different URLs are cached under different keys
-        request1 = self.factory.get('/%i' % random.randint(1,1e6))
-        request2 = self.factory.get('/%i' % random.randint(1,1e6))
+        request1 = self.random_get()
+        request2 = self.random_get()
         self.assertNotEqual(decorated_view(request1).content,
                             decorated_view(request2).content)
 
@@ -186,21 +188,21 @@ class ResponseCacheTest(TestCase):
     def test_last_modified_default(self):
         decorated_view = rsp_cache(randomView)
         # Last-Modified has to be set to "now"
-        request = self.factory.get('/%i' % random.randint(1,1e6))
+        request = self.random_get()
         rsp = decorated_view(request)
         self.assertEqual(rsp.get('Last-Modified'), http_date())
 
     def test_last_modified_from_response(self):
         decorated_view = rsp_cache(randomView)
         # Last-Modified has to be set to whatever was in the original response
-        request = self.factory.get('/%i' % random.randint(1,1e6))
+        request = self.random_get()
         rsp = decorated_view(request, 123456)
         self.assertEqual(rsp.get('Last-Modified'), http_date(123456))
 
     def test_cache_arbitrary_header(self):
         decorated_view = rsp_cache(randomView)
         # Response setting some unknown header gets cached
-        request = self.factory.get('/%i' % random.randint(1, 1e6))
+        request = self.random_get()
         rsp1 = decorated_view(request, headers={'h1': 'v1'})
         rsp2 = decorated_view(request, headers={'h2': 'v2'})
         self.assertEqual(rsp1.content, rsp2.content)
@@ -211,7 +213,7 @@ class ResponseCacheTest(TestCase):
     def test_not_caching_set_cookie(self):
         decorated_view = rsp_cache(randomView)
         # First request with Set-Cookie is not cached
-        request = self.factory.get('/%i' % random.randint(1, 1e6))
+        request = self.random_get()
         rsp1 = decorated_view(request, headers={'Set-Cookie': 'foobar'})
         rsp2 = decorated_view(request)
         self.assertNotEqual(rsp1.content, rsp2.content)
@@ -221,7 +223,7 @@ class ResponseCacheTest(TestCase):
     def test_not_caching_vary(self):
         decorated_view = rsp_cache(randomView)
         # First request with Set-Cookie is not cached
-        request = self.factory.get('/%i' % random.randint(1, 1e6))
+        request = self.random_get()
         rsp1 = decorated_view(request, headers={'Vary': '*'})
         rsp2 = decorated_view(request)
         self.assertNotEqual(rsp1.content, rsp2.content)
@@ -232,7 +234,7 @@ class ResponseCacheTest(TestCase):
         decorated_view = ResponseCache(
             0.3, cache='testcache', nocache_rsp=('Hdr1',))(randomView)
         # First request with Set-Cookie is not cached
-        request = self.factory.get('/%i' % random.randint(1, 1e6))
+        request = self.random_get()
         rsp1 = decorated_view(request, headers={'Hdr1': 'val1'})
         rsp2 = decorated_view(request)
         self.assertNotEqual(rsp1.content, rsp2.content)
@@ -241,20 +243,20 @@ class ResponseCacheTest(TestCase):
 
     def test_not_caching_csrf_response(self):
         decorated_view = rsp_cache(csrfView)
-        i = random.randint(1, 1e6)
+        url = "/%s" % uuid4()
         # Responses that have CSRF token used should not be cached
-        request1 = self.factory.get('/%i' % i)
-        request2 = self.factory.get('/%i' % i)
+        request1 = self.factory.get(url)
+        request2 = self.factory.get(url)
         rsp1 = decorated_view(request1)
         rsp2 = decorated_view(request2)
         self.assertNotEqual(rsp1.content, rsp2.content)
 
     def test_not_caching_csrf_template_response(self):
         decorated_view = rsp_cache(csrfTemplateView)
-        i = random.randint(1, 1e6)
+        url = "/%s" % uuid4()
         # Responses that have CSRF token used should not be cached
-        request1 = self.factory.get('/%i' % i)
-        request2 = self.factory.get('/%i' % i)
+        request1 = self.factory.get(url)
+        request2 = self.factory.get(url)
         rsp1 = decorated_view(request1)
         rsp1.render()
         rsp2 = decorated_view(request2)
