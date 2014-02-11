@@ -8,19 +8,18 @@ from django.utils.http import http_date
 from django.http import HttpResponse
 from django.contrib.auth.models import User, AnonymousUser
 from django.template import Template, RequestContext
-from django.template.response import SimpleTemplateResponse
+from django.template.response import TemplateResponse
 
 from django.core.cache import get_cache
 
 from calm_cache.decorators import ResponseCache
-
-random.seed()
 
 try:
     from django.http import StreamingHttpResponse
 except ImportError:
     StreamingHttpResponse = None
 
+random.seed()
 
 def randomView(request, last_modified=None, headers=None):
     response = HttpResponse(str(random.randint(0,1e6)))
@@ -32,15 +31,17 @@ def randomView(request, last_modified=None, headers=None):
 
     return response
 
-
-def templateRandomView(request):
+def randomTemplateView(request):
     t = Template("%s" % random.randint(0, 1e6))
-    return SimpleTemplateResponse(t)
-
+    return TemplateResponse(request, t)
 
 def csrfView(request):
     t = Template("%s: {{ csrf_token }}" % random.randint(0, 1e6))
     return HttpResponse(t.render(RequestContext(request)))
+
+def csrfTemplateView(request):
+    t = Template("%s: {{ csrf_token }}" % random.randint(0, 1e6))
+    return TemplateResponse(request, t)
 
 
 rsp_cache = ResponseCache(0.3, cache='testcache')
@@ -142,7 +143,7 @@ class ResponseCacheTest(TestCase):
 
     def test_caching_template_response(self):
         # Perform the same tests for SimpleTemplateResponse
-        decorated_view = rsp_cache(templateRandomView)
+        decorated_view = rsp_cache(randomTemplateView)
         request = self.factory.get('/%i' % random.randint(1,1e6))
         rsp1 = decorated_view(request)
         # Shouldn't be rendered yet
@@ -246,4 +247,16 @@ class ResponseCacheTest(TestCase):
         request2 = self.factory.get('/%i' % i)
         rsp1 = decorated_view(request1)
         rsp2 = decorated_view(request2)
+        self.assertNotEqual(rsp1.content, rsp2.content)
+
+    def test_not_caching_csrf_template_response(self):
+        decorated_view = rsp_cache(csrfTemplateView)
+        i = random.randint(1, 1e6)
+        # Responses that have CSRF token used should not be cached
+        request1 = self.factory.get('/%i' % i)
+        request2 = self.factory.get('/%i' % i)
+        rsp1 = decorated_view(request1)
+        rsp1.render()
+        rsp2 = decorated_view(request2)
+        rsp2.render()
         self.assertNotEqual(rsp1.content, rsp2.content)

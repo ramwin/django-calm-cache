@@ -111,9 +111,22 @@ class ResponseCache(object):
         for header in self.nocache_rsp:
             if response.has_header(header):
                 return False
+        # Indicates that CSRF token was accessed in templates at least once
+        # WARNING: Does not work for SimpleTemplateResponse !
         if request.META.get('CSRF_COOKIE_USED', False):
             return False
         return True
+
+    def store(self, cache_key, request, response):
+        """
+        Conditionally saves response to the cache
+        """
+        if not self.should_store(request, response):
+            return
+        # Set Last-Modified to the response, if it's not set already:
+        if not response.has_header('Last-Modified'):
+            response['Last-Modified'] = http_date()
+        self.cache.set(cache_key, response, self.cache_timeout)
 
     def wrapper(self, request, *args, **kwargs):
         """
@@ -123,27 +136,22 @@ class ResponseCache(object):
         if not self.should_fetch(request) or cache_key is None:
             # Return immediately
             return self.wrapped(request, *args, **kwargs)
+        # Fetch from cache and return if found
         cached_response = self.cache.get(cache_key)
         if cached_response is not None:
-            # Return from cache if found
             return cached_response
 
-        # Execute the view and return the response if it shouldn't be cached
+        # Execute the view
         response = self.wrapped(request, *args, **kwargs)
-        if not self.should_store(request, response):
-            return response
-
-        # Set Last-Modified to the response, if it's not set already:
-        if not response.has_header('Last-Modified'):
-            response['Last-Modified'] = http_date()
 
         # Based on django.middleware.cache.UpdateCacheMiddleware
         if hasattr(response, 'render') and callable(response.render):
             # SimpleTemplateResponse and TemplateResponse are different
+            # Should store reponses after they are rendered
             response.add_post_render_callback(
-                lambda r: self.cache.set(cache_key, response,
-                                         self.cache_timeout)
+                lambda r: self.store(cache_key, request, r)
             )
         else:
-            self.cache.set(cache_key, response, self.cache_timeout)
+            # Store the response straight away
+            self.store(cache_key, request, response)
         return response
