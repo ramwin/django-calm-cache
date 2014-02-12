@@ -21,6 +21,10 @@ except ImportError:
 
 
 def randomView(request, last_modified=None, headers=None):
+    """
+    Returns random UUID in response body and, optionaly,
+    sets Last-Modified and other arbitrary headers
+    """
     response = HttpResponse(str(uuid4()))
     if last_modified is not None:
         response['Last-Modified'] = http_date(last_modified)
@@ -323,3 +327,10 @@ class ResponseCacheTest(TestCase):
             self.assertFalse(ResponseCache(1).include_scheme)
         with self.settings(CCRC_KEY_HOST=False):
             self.assertFalse(ResponseCache(1).include_host)
+
+    def test_wrapper_special_properties(self):
+        # The wrapper should keep original function's special attributes
+        decorated_view = rsp_cache(randomView)
+        self.assertEqual(decorated_view.__doc__, randomView.__doc__)
+        self.assertEqual(decorated_view.__module__, randomView.__module__)
+        self.assertEqual(decorated_view.__name__, randomView.__name__)

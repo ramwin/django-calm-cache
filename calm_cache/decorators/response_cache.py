@@ -1,3 +1,5 @@
+from functools import wraps
+
 from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
 from django.utils.http import http_date
 from django.conf import settings
@@ -93,7 +95,13 @@ class ResponseCache(object):
 
     def __call__(self, view):
         self.wrapped = view
-        return self.wrapper
+        # Update __name__, __doc__ and __module__
+        # It's impossible to change these attributes for a method, hence this
+        # function
+        @wraps(view)
+        def _wrapper(request, *args, **kwargs):
+            return self.wrapper(request, *args, **kwargs)
+        return _wrapper
 
     def _key_func(self, request):
         """
