@@ -273,7 +273,7 @@ class ResponseCacheTest(TestCase):
         self.assertNotEqual(rsp1.content, rsp2.content)
 
     def test_whitelisted_req_cookies(self):
-        cache = ResponseCache(0.3, cache='testcache', exclude_cookies=('c1',))
+        cache = ResponseCache(0.3, cache='testcache', excluded_cookies=('c1',))
         decorated_view = cache(randomView)
         # This cookie does not prevent request from being cached
         request = self.random_get()
@@ -294,7 +294,7 @@ class ResponseCacheTest(TestCase):
 
     def test_blacklisted_req_cookies(self):
         cache = ResponseCache(0.3, cache='testcache', cache_cookies=True,
-                              exclude_cookies=('c1',))
+                              excluded_cookies=('c1',))
         decorated_view = cache(randomView)
         # This cookie prevents this request from being cached,
         # though generally cookies are allowed
@@ -309,8 +309,8 @@ class ResponseCacheTest(TestCase):
             self.assertEqual(ResponseCache(1).key_prefix, 'foobar')
         with self.settings(CCRC_CACHE_REQ_COOKIES=True):
             self.assertTrue(ResponseCache(1).cache_cookies)
-        with self.settings(CCRC_EXCLUDE_REQ_COOKIES=('c1', 'c2')):
-            self.assertEqual(ResponseCache(1).exclude_cookies, ('c1', 'c2'))
+        with self.settings(CCRC_EXCLUDED_REQ_COOKIES=('c1', 'c2')):
+            self.assertEqual(ResponseCache(1).excluded_cookies, ('c1', 'c2'))
         with self.settings(CCRC_CACHE_REQ_METHDODS=('POST',)):
             self.assertEqual(ResponseCache(1).methods, ('POST',))
         with self.settings(CCRC_CACHE_RSP_CODES=(999,)):

@@ -21,7 +21,7 @@ class ResponseCache(object):
     # Defaults
     ANONYMOUS_REQ_ONLY = True
     CACHE_REQ_COOKIES = False
-    EXCLUDE_REQ_COOKIES = ()
+    EXCLUDED_REQ_COOKIES = ()
     CACHE_REQ_METHDODS = ('GET', )
     CACHE_RSP_CODES = (200, )
     NOCACHE_RSP_HEADERS = ('Set-Cookie', 'Vary')
@@ -46,6 +46,12 @@ class ResponseCache(object):
             `anonymous_only`: boolean selecting whether only anonymous requests
                 should be served from the cache/responses cached.
                 Default: `True`
+            `cache_cookies`: boolean, if False, requests with cookies will
+                not be cached, otherwise cookies are ignored. Default: `False`
+            `excluded_cookies`: if `cache_cookies` is False, cookies found in
+                this list are ignored (considered as not set).
+                If `cache_cookies` is True, response will not be cached if
+                one of cookies listed is found in the request. Default: `()`
             `include_scheme`: boolean selecting whether request scheme (http
                 or https) should be used for the key. Default: `True`
             `include_host`: boolean selecting whether requested Host: should
@@ -75,9 +81,9 @@ class ResponseCache(object):
         self.cache_cookies = kwargs.get(
             'cache_cookies', getattr(settings, 'CCRC_CACHE_REQ_COOKIES',
                                      self.CACHE_REQ_COOKIES))
-        self.exclude_cookies = kwargs.get(
-            'exclude_cookies', getattr(settings, 'CCRC_EXCLUDE_REQ_COOKIES',
-                                      self.EXCLUDE_REQ_COOKIES))
+        self.excluded_cookies = kwargs.get(
+            'excluded_cookies', getattr(settings, 'CCRC_EXCLUDED_REQ_COOKIES',
+                                        self.EXCLUDED_REQ_COOKIES))
         self.include_scheme = kwargs.get(
             'include_scheme', getattr(settings, 'CCRC_KEY_SCHEME',
                                       self.KEY_SCHEME))
@@ -126,11 +132,11 @@ class ResponseCache(object):
                 return False
         if not self.cache_cookies:
             for cookie in request.COOKIES:
-                if cookie not in self.exclude_cookies:
+                if cookie not in self.excluded_cookies:
                     return False
         else:
             for cookie in request.COOKIES:
-                if cookie in self.exclude_cookies:
+                if cookie in self.excluded_cookies:
                     return False
         return True
 
