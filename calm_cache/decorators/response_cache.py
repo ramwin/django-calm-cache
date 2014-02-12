@@ -30,6 +30,7 @@ class ResponseCache(object):
     KEY_PREFIX = ''
     KEY_SCHEME = True
     KEY_HOST = True
+    HITMISS_HEADER = ('X-Cache', 'Hit', 'Miss')
 
     def __init__(self, cache_timeout, **kwargs):
         """
@@ -58,6 +59,10 @@ class ResponseCache(object):
                 or https) should be used for the key. Default: `True`
             `include_host`: boolean selecting whether requested Host: should
                 be used for the key. Default: `True`
+            `hitmiss_header`: a tuple with three elements: header name,
+                value for cache hit and another for cache miss.
+                If set to `None`, the header is never added
+                Default: `('X-Cache', 'Hit', 'Miss')'`.
             `key_function`: optional callable that should be used instead of
                 built-in key function.
                 Has to accept request as its only argument and return either
@@ -91,6 +96,9 @@ class ResponseCache(object):
                                       self.KEY_SCHEME))
         self.include_host = kwargs.get(
             'include_host', getattr(settings, 'CCRC_KEY_HOST', self.KEY_HOST))
+        self.hitmiss_header = kwargs.get(
+            'hitmiss_header', getattr(settings, 'CCRC_HITMISS_HEADER',
+                                      self.HITMISS_HEADER))
         self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
@@ -165,6 +173,15 @@ class ResponseCache(object):
             return False
         return True
 
+    def update_response(self, response, hit):
+        """
+        Updates response with a header indicating if cache was hit or missed
+        """
+        if self.hitmiss_header is None:
+            return
+        hitmiss_header, hit_value, miss_value = self.hitmiss_header
+        response[hitmiss_header] = hit_value if hit else miss_value
+
     def store(self, cache_key, request, response):
         """
         Conditionally saves response to the cache
@@ -174,7 +191,11 @@ class ResponseCache(object):
         # Set Last-Modified to the response, if it's not set already:
         if not response.has_header('Last-Modified'):
             response['Last-Modified'] = http_date()
+        # Set cache: hit header so it's always served from cache
+        self.update_response(response, hit=True)
         self.cache.set(cache_key, response, self.cache_timeout)
+        # Add cache miss header before serving first time after missed and stored
+        self.update_response(response, hit=False)
 
     def wrapper(self, request, *args, **kwargs):
         """
@@ -187,6 +208,7 @@ class ResponseCache(object):
         # Fetch from cache and return if found
         cached_response = self.cache.get(cache_key)
         if cached_response is not None:
+            # Add cache hit header
             return cached_response
 
         # Execute the view

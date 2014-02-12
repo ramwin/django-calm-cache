@@ -308,6 +308,35 @@ class ResponseCacheTest(TestCase):
         rsp2 = decorated_view(request)
         self.assertNotEqual(rsp1.content, rsp2.content)
 
+    def test_hitmiss_header(self):
+        decorated_view = rsp_cache(randomView)
+        request = self.random_get()
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertEqual(rsp1['X-Cache'], 'Miss')
+        self.assertEqual(rsp2['X-Cache'], 'Hit')
+
+    def test_custom_hitmiss_header(self):
+        cache = ResponseCache(0.3, cache='testcache',
+                              hitmiss_header=('h', '+', '-'))
+        decorated_view = cache(randomView)
+        request = self.random_get()
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertFalse(rsp1.has_header('X-Cache'))
+        self.assertFalse(rsp2.has_header('X-Cache'))
+        self.assertEqual(rsp1['h'], '-')
+        self.assertEqual(rsp2['h'], '+')
+
+    def test_absent_hitmiss_header(self):
+        cache = ResponseCache(0.3, cache='testcache', hitmiss_header=None)
+        decorated_view = cache(randomView)
+        request = self.random_get()
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertFalse(rsp1.has_header('X-Cache'))
+        self.assertFalse(rsp2.has_header('X-Cache'))
+
     def test_django_settings(self):
         with self.settings(CCRC_KEY_PREFIX='foobar'):
             self.assertEqual(ResponseCache(1).key_prefix, 'foobar')
@@ -325,6 +354,8 @@ class ResponseCacheTest(TestCase):
             self.assertFalse(ResponseCache(1).anonymous_only)
         with self.settings(CCRC_KEY_SCHEME=False):
             self.assertFalse(ResponseCache(1).include_scheme)
+        with self.settings(CCRC_HITMISS_HEADER=('h', '1', '2')):
+            self.assertEqual(ResponseCache(1).hitmiss_header, ('h', '1', '2'))
         with self.settings(CCRC_KEY_HOST=False):
             self.assertFalse(ResponseCache(1).include_host)
 
