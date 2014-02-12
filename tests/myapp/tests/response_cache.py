@@ -337,6 +337,19 @@ class ResponseCacheTest(TestCase):
         self.assertFalse(rsp1.has_header('X-Cache'))
         self.assertFalse(rsp2.has_header('X-Cache'))
 
+    def test_custom_hitmiss_header_template_view(self):
+        cache = ResponseCache(0.3, cache='testcache',
+                              hitmiss_header=('h', '+', '-'))
+        decorated_view = cache(randomTemplateView)
+        request = self.random_get()
+        rsp1 = decorated_view(request)
+        rsp1.render()
+        rsp2 = decorated_view(request)
+        self.assertFalse(rsp1.has_header('X-Cache'))
+        self.assertFalse(rsp2.has_header('X-Cache'))
+        self.assertEqual(rsp1['h'], '-')
+        self.assertEqual(rsp2['h'], '+')
+
     def test_django_settings(self):
         with self.settings(CCRC_KEY_PREFIX='foobar'):
             self.assertEqual(ResponseCache(1).key_prefix, 'foobar')
