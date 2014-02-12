@@ -21,16 +21,18 @@ class ResponseCache(object):
     """
 
     # Defaults
-    ANONYMOUS_REQ_ONLY = True
-    CACHE_REQ_COOKIES = False
-    EXCLUDED_REQ_COOKIES = ()
-    CACHE_REQ_METHDODS = ('GET', )
-    CACHE_RSP_CODES = (200, )
-    NOCACHE_RSP_HEADERS = ('Set-Cookie', 'Vary')
-    KEY_PREFIX = ''
-    KEY_SCHEME = True
-    KEY_HOST = True
-    HITMISS_HEADER = ('X-Cache', 'Hit', 'Miss')
+    anonymous_only = getattr(settings, 'CCRC_ANONYMOUS_REQ_ONLY', True)
+    cache_cookies = getattr(settings, 'CCRC_CACHE_REQ_COOKIES', False)
+    excluded_cookies = getattr(settings, 'CCRC_EXCLUDED_REQ_COOKIES', ())
+    methods = getattr(settings, 'CCRC_CACHE_REQ_METHDODS', ('GET', ))
+    codes = getattr(settings, 'CCRC_CACHE_REQ_METHDODS', (200, ))
+    nocache_rsp = getattr(settings, 'CCRC_NOCACHE_RSP_HEADERS',
+                          ('Set-Cookie', 'Vary'))
+    key_prefix = getattr(settings, 'CCRC_KEY_PREFIX', '')
+    include_scheme = getattr(settings, 'CCRC_KEY_SCHEME', True)
+    include_host = getattr(settings, 'CCRC_KEY_HOST', True)
+    hitmiss_header = getattr(settings, 'CCRC_HITMISS_HEADER',
+                             ('X-Cache', 'Hit', 'Miss'))
 
     def __init__(self, cache_timeout, **kwargs):
         """
@@ -71,34 +73,11 @@ class ResponseCache(object):
         """
         self.cache_timeout = cache_timeout
         self.cache = get_cache(kwargs.get('cache', DEFAULT_CACHE_ALIAS))
-        self.key_prefix = kwargs.get(
-            'key_prefix', getattr(settings, 'CCRC_KEY_PREFIX', self.KEY_PREFIX))
-        self.methods = kwargs.get(
-            'methods', getattr(settings, 'CCRC_CACHE_REQ_METHDODS',
-                               self.CACHE_REQ_METHDODS))
-        self.codes = kwargs.get(
-            'codes', getattr(settings, 'CCRC_CACHE_RSP_CODES',
-                             self.CACHE_RSP_CODES))
-        self.nocache_rsp = kwargs.get(
-            'nocache_rsp', getattr(settings, 'CCRC_NOCACHE_RSP_HEADERS',
-                                   self.NOCACHE_RSP_HEADERS))
-        self.anonymous_only = kwargs.get(
-            'anonymous_only', getattr(settings, 'CCRC_ANONYMOUS_REQ_ONLY',
-                                      self.ANONYMOUS_REQ_ONLY))
-        self.cache_cookies = kwargs.get(
-            'cache_cookies', getattr(settings, 'CCRC_CACHE_REQ_COOKIES',
-                                     self.CACHE_REQ_COOKIES))
-        self.excluded_cookies = kwargs.get(
-            'excluded_cookies', getattr(settings, 'CCRC_EXCLUDED_REQ_COOKIES',
-                                        self.EXCLUDED_REQ_COOKIES))
-        self.include_scheme = kwargs.get(
-            'include_scheme', getattr(settings, 'CCRC_KEY_SCHEME',
-                                      self.KEY_SCHEME))
-        self.include_host = kwargs.get(
-            'include_host', getattr(settings, 'CCRC_KEY_HOST', self.KEY_HOST))
-        self.hitmiss_header = kwargs.get(
-            'hitmiss_header', getattr(settings, 'CCRC_HITMISS_HEADER',
-                                      self.HITMISS_HEADER))
+        options = ('anonymous_only', 'cache_cookies', 'excluded_cookies',
+                   'methods', 'codes', 'nocache_rsp', 'key_prefix',
+                   'include_scheme', 'include_host', 'hitmiss_header')
+        for option in options:
+            setattr(self, option, kwargs.get(option, getattr(self, option)))
         self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
