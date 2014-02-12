@@ -12,9 +12,9 @@ class ResponseCache(object):
 
     Example configuration:
 
-        from calm_cache.decorators import ResponseCache
+        from calm_cache.decorators import cache_response
 
-        @ResponseCache(15, key_prefix='my_view', codes=(200, 404))
+        @cache_response(15, key_prefix='my_view', codes=(200, 404))
         def my_view(request, slug):
             ...
             return HttpResponse()
@@ -225,3 +225,6 @@ class ResponseCache(object):
             # Store the response straight away
             self.store(cache_key, request, response)
         return response
+
+
+cache_response = ResponseCache

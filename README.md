@@ -59,9 +59,9 @@ Now relax knowing your site's caching won't fall over at the first sign of susta
 Example usage:
 
     :::python
-    from calm_cache.decorated import ResponseCache
+    from calm_cache.decorated import cache_response
 
-    @ResponseCache(15, key_prefix='my_view', codes=(200, 404)):
+    @cache_response(15, key_prefix='my_view', codes=(200, 404)):
     def my_view(request, slug=None):
         return HttpResponse()
 
