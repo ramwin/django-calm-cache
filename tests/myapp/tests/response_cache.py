@@ -351,28 +351,6 @@ class ResponseCacheTest(TestCase):
         self.assertEqual(rsp1['h'], '-')
         self.assertEqual(rsp2['h'], '+')
 
-#    def test_django_settings(self):
-#        with self.settings(CCRC_KEY_PREFIX='foobar'):
-#            self.assertEqual(ResponseCache(1).key_prefix, 'foobar')
-#        with self.settings(CCRC_CACHE_REQ_COOKIES=True):
-#            self.assertTrue(ResponseCache(1).cache_cookies)
-#        with self.settings(CCRC_EXCLUDED_REQ_COOKIES=('c1', 'c2')):
-#            self.assertEqual(ResponseCache(1).excluded_cookies, ('c1', 'c2'))
-#        with self.settings(CCRC_CACHE_REQ_METHDODS=('POST',)):
-#            self.assertEqual(ResponseCache(1).methods, ('POST',))
-#        with self.settings(CCRC_CACHE_RSP_CODES=(999,)):
-#            self.assertEqual(ResponseCache(1).codes, (999,))
-#        with self.settings(CCRC_NOCACHE_RSP_HEADERS=('H1',)):
-#            self.assertEqual(ResponseCache(1).nocache_rsp, ('H1',))
-#        with self.settings(CCRC_ANONYMOUS_REQ_ONLY=False):
-#            self.assertFalse(ResponseCache(1).anonymous_only)
-#        with self.settings(CCRC_KEY_SCHEME=False):
-#            self.assertFalse(ResponseCache(1).include_scheme)
-#        with self.settings(CCRC_HITMISS_HEADER=('h', '1', '2')):
-#            self.assertEqual(ResponseCache(1).hitmiss_header, ('h', '1', '2'))
-#        with self.settings(CCRC_KEY_HOST=False):
-#            self.assertFalse(ResponseCache(1).include_host)
-
     def test_wrapper_special_properties(self):
         # The wrapper should keep original function's special attributes
         decorated_view = rsp_cache(randomView)
