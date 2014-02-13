@@ -13,7 +13,7 @@ bucket loads of traffic.
    data compression provided by [python-memcached](ftp://ftp.tummy.com/pub/python-memcached/)
    and [pylibmc](http://sendapatch.se/projects/pylibmc/) respectively
  * `PyLibMCCache` is extended to support binary protocol
- * `ResponseCache` that could be applied to any Django view and
+ * `cache_response` that could be applied to any Django view and
    conditionally cache responses just like Django standard `CacheMiddleware`
    and `cache_page` do, but more configurable, explicit and extensible
 
@@ -22,6 +22,7 @@ bucket loads of traffic.
 First install the library:
 
     pip install hg+https://bitbucket.org/pitcrews/django-calm-cache/
+
 
 ### Cache backends
 
@@ -54,7 +55,14 @@ Update the cache settings in your `settings.py`:
 
 Now relax knowing your site's caching won't fall over at the first sign of sustained traffic.
 
-### Page Cache
+
+#### CalmCache Limitations
+
+ * `CalmCache` currently only supports cache methods `add`, `set`, `get`, `delete`,
+   `has_key` and `clear`
+
+
+### Response Cache
 
 Example usage:
 
@@ -65,36 +73,60 @@ Example usage:
     def my_view(request, slug=None):
         return HttpResponse()
 
-`ResponseCache`'s constructor arguments:
+`cache_response`'s constructor arguments, relevant Django settings and
+defaults:
 
  * `cache_timeout`: integer, default TTL for cached entries. Required
  * `cache`: Django cache backend name. If not specified, default cache
    backend will be used
- * `key_prefix`: this sting is always prepending resulting keys
+ * `key_prefix`: this string is always prepending resulting keys.
+   Default: `''`. Django setting: `CCRC_KEY_PREFIX`
  * `methods`: a list/tuple with request methods that could be cached.
-   Default: `('GET', )`
- * `codes`: a list/tuple with cacheable response codes. Default: `(200, )`
- * `anonymous_only`: boolean selecting whether only anonmous requests
-   should be served from the cache/responses cached. Default: `True`
+   Default: `('GET', )`. Django setting: `CCRC_CACHE_REQ_METHDODS`
+ * `codes`: a list/tuple with cacheable response codes.
+   Default: `(200, )`. Django setting: `CCRC_CACHE_RSP_CODES`
+ * `nocache_rsp`: a list of response headers that prevents response
+   from being cached. Default: ('Set-Cookie', 'Vary').
+   Django setting: `CCRC_NOCACHE_RSP_HEADERS`
+ * `anonymous_only`: boolean selecting whether only anonymous requests
+   should be served from the cache/responses cached.
+   Default: `True`. Django setting: `CCRC_ANONYMOUS_REQ_ONLY`
+ * `cache_cookies`: boolean, if False, requests with cookies will
+   not be cached, otherwise cookies are ignored. Default: `False`.
+   Django setting: `CCRC_CACHE_REQ_COOKIES`
+ * `excluded_cookies`: if `cache_cookies` is False, cookies found in
+   this list are ignored (considered as not set).
+   If `cache_cookies` is True, response will not be cached if
+   one of cookies listed is found in the request. Default: `()`.
+   Django setting: `CCRC_EXCLUDED_REQ_COOKIES`
  * `include_scheme`: boolean selecting whether request scheme (http
-   or https) should be used for the key. Default: `True`
+   or https) should be used for the key. Default: `True`.
+   Django setting: `CCRC_KEY_SCHEME`
  * `include_host`: boolean selecting whether requested Host: should
-   be used for the key. Default: `True`
+   be used for the key. Default: `True`. Django setting: `CCRC_KEY_HOST`
+ * `hitmiss_header`: a tuple with three elements: header name,
+   value for cache hit and another for cache miss.
+   If set to `None`, the header is never added
+   Default: `('X-Cache', 'Hit', 'Miss')'`. Django setting: `CCRC_HITMISS_HEADER`
  * `key_function`: optional callable that should be used instead of
    built-in key function.
    Has to accept request as its only argument and return either
    a string with the key or `None` if the request should not be cached.
 
-## Known Limitations
 
- * `CalmCache` currently only supports cache methods `add`, `set`, `get`, `delete`,
-   `has_key` and `clear`
- * Unlike `CacheMiddleware`, `ResponseCache` does not respect `Vary:`
-   header returned from the view
- * `ResponseCache` does not respect `Cache-Control:` and `Pragma:` headers
-   in requests
- * `ResponseCache` does not check `Set-Cookie:` header in responses and
-   neither removes it before caching nor skips caching at all. Please be warned
+#### ResponseCache features
+
+ * Unlike `CacheMiddleware`, `cache_response` does not analyse `Cache-Control`
+   header and does not change cache TTL. The header is cached along
+   with the response just like any other header
+ * Default settings for `cache_reponse` are chosen to be the safest, but in
+   order to achieve better cache performance careful configuretion is required
+ * By default, reponses with `Set-Cookie` and `Vary` headers are never cached,
+   requests that have `Cookie` header are not cached either
+ * Responses that have CSRF token(s) are never cached
+ * Requests that have authenticated user associated with them are not cached
+   by default
+
 
 ## Legals
 
