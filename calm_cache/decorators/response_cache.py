@@ -21,6 +21,7 @@ class ResponseCache(object):
     """
 
     # Defaults
+    cache = getattr(settings, 'CCRC_CACHE', DEFAULT_CACHE_ALIAS)
     anonymous_only = getattr(settings, 'CCRC_ANONYMOUS_REQ_ONLY', True)
     cache_cookies = getattr(settings, 'CCRC_CACHE_REQ_COOKIES', False)
     excluded_cookies = getattr(settings, 'CCRC_EXCLUDED_REQ_COOKIES', ())
@@ -79,13 +80,13 @@ class ResponseCache(object):
                 should not be cached.
         """
         self.cache_timeout = cache_timeout
-        self.cache = get_cache(kwargs.get('cache', DEFAULT_CACHE_ALIAS))
+        self.cache = get_cache(kwargs.get('cache', self.cache))
+        self.key_func = kwargs.get('key_func', self._key_func)
         options = ('anonymous_only', 'cache_cookies', 'excluded_cookies',
                    'methods', 'codes', 'nocache_rsp', 'key_prefix',
                    'include_scheme', 'include_host', 'hitmiss_header')
         for option in options:
             setattr(self, option, kwargs.get(option, getattr(self, option)))
-        self.key_func = kwargs.get('key_func', None) or self._key_func
 
     def __call__(self, view):
         self.wrapped = view
