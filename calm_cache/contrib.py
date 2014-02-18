@@ -13,4 +13,6 @@ def sha1_key_func(key, key_prefix, version):
     `'KEY_FUNCTION' 'calm_cache.contrib.sha1_key_func'`
     to your cache backend definition in Django settings.
     """
+    if isinstance(key, unicode):
+        key = key.encode('utf-8')
     return '%s:%s:%s' % (key_prefix, version, sha1(key).hexdigest())
