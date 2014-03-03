@@ -19,6 +19,9 @@ class CalmCache(BaseCache):
             'default': {
                 'BACKEND' : 'calm_cache.backends.CalmCache',
                 'LOCATION': 'my_cache',
+                'MINT_DELAY': 10,
+                'GRACE_TIME': 120,
+                'JITTER_TIME': 10,
             },
             'my_cache': {
                 'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
@@ -32,18 +35,20 @@ class CalmCache(BaseCache):
         super(CalmCache, self).__init__(params)
 
         mint_delay = params.get('mint_delay', params.get('MINT_DELAY', 0))
+        grace_time = params.get('grace_time', params.get('GRACE_TIME', 0))
         jitter_time = params.get('jitter_time', params.get('JITTER_TIME', 0))
 
         self.time_func = time.time
         self.rand_func = random.randint
         self.mint_delay = int(mint_delay)
+        self.grace_time = int(grace_time)
         self.jitter_time = int(jitter_time)
 
         self.cache = get_cache(real_cache)
 
     @property
-    def is_minted(self):
-        return self.mint_delay > 0
+    def is_packing(self):
+        return self.mint_delay > 0 or self.grace_time > 0
 
     @property
     def has_jitter(self):
@@ -58,19 +63,19 @@ class CalmCache(BaseCache):
         return self.time_func()
 
     def _pack_value(self, value, timeout, refreshing=False):
-        if not self.is_minted:
+        if not self.is_packing:
             return value
         return (value, self._time() + timeout + self.jitter(), refreshing)
 
     def _unpack_value(self, value):
         if value is None:
             return None
-        if not self.is_minted:
+        if not self.is_packing:
             return (value, 0, True)
         return value
 
     def _get_real_timeout(self, timeout):
-        return timeout + self.mint_delay + self.jitter()
+        return timeout + self.mint_delay + self.grace_time + self.jitter()
 
     def add(self, key, value, timeout=None, version=None):
         cache_key = self.make_key(key, version=version)
@@ -90,7 +95,13 @@ class CalmCache(BaseCache):
         if value is None:
             return default
         value, refresh_time, refreshing = self._unpack_value(value)
-        if (self._time() > refresh_time) and not refreshing:
+        now = self._time()
+        if now > (refresh_time + self.mint_delay):
+            # We are beyond minting period, remove the object and return stale
+            self.cache.delete(cache_key)
+            return value
+        if (now > refresh_time) and not refreshing:
+            # We are in the mint period, allow serving stale while revalidating
             # Use user-supplied key here, so it will be transformed in set()
             self.set(key, value, timeout=self.mint_delay, version=version, refreshing=True)
             return None
