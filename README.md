@@ -34,6 +34,7 @@ Update the cache settings in your `settings.py`:
             'BACKEND' : 'calm_cache.backends.CalmCache',
             'LOCATION': 'locmem-cache',
             'MINT_DELAY': '10', # Allow stale results for this many seconds. Default: 0 (Off)
+            'GRACE_TIME': '120', # Serve stale value once during this period
             'JITTER_TIME': '10', # Upper bound on the random jitter in seconds. Default: 0 (Off)
         },
         'locmem-cache': {
@@ -54,6 +55,46 @@ Update the cache settings in your `settings.py`:
     }
 
 Now relax knowing your site's caching won't fall over at the first sign of sustained traffic.
+
+#### CalmCache Configuration
+
+`CalmCache` backend accepts the following parameters:
+
+ * `LOCATION`: the name of another, "real", Django cache backend. Will be used
+   to actually store values
+ * `MINT_DELAY`: the time period right after user-supplied timeout when first
+   request gets "not found" and has to refresh the value while all
+   following requests get stale value until it is either updated, expired
+   completely or grace period starts (see below)
+ * `GRACE_TIME`: the time period after mint delay when stale value is returned
+   to first request and gets removed straight after that
+ * `JITTER_TIME`: defines the range for `[0 ... JITTER_TIME]` random value
+   that is added to client supplied and "real" timeouts
+
+
+#### CalmCache Guidelines
+
+Actual stored key names are composed from `CalmCache.make_key()`
+and underlying cache's `make_key()` methods' outputs, and usually are stacked:
+
+    real_cache_prefix:calm_cache_prefix:user_supplied_key
+
+
+Minting is designed to cope with highly concurrent requests and `MINT_DELAY`
+whould be comparable to the stored object regeneration time.
+
+Grace period starts after mint delay and first request that comes during this time
+is satisfied with stale value. The value cached under the given key
+is invalidated immediately and next requesting client will have to regenerate and
+store fresh value. This technique improves hit ratio for infrequently accessed
+data when occasional staleness is affordable.
+
+Jitter is added to the user supplied timeout (so it's always longer) as well
+as to the underlying cache's TTL in order to avoid cache self-synchronisation.
+
+The maximum real cache TTL is caclulated as
+
+    timeout + MINT_DELAY + GRACE_TIME + JITTER_TIME
 
 
 #### CalmCache Limitations
