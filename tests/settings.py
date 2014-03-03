@@ -26,6 +26,7 @@ CACHES = {
         'BACKEND' : 'calm_cache.backends.CalmCache',
         'LOCATION': 'testcache',
         'MINT_DELAY': '10',
+        'GRACE_TIME': '60',
         'JITTER_TIME': '10',
     },
     'testcache': {

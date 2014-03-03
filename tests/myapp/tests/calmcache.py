@@ -20,6 +20,8 @@ class CalmCacheTest(TestCase):
     def tearDown(self):
         cache.time_func = self._time_func
         cache.rand_func = self._rand_func
+        cache.clear()
+        testcache.clear()
 
     def test_set(self):
         cache.set('test-key-1', 'test-value-1', timeout=60)
@@ -53,7 +55,7 @@ class CalmCacheTest(TestCase):
         # make sure the key actually exists
         r = cache.get('test-key-4')
         self.assertEqual(r, 'test-value-4')
-        # travel forward in time
+        # travel forward in time: timeout + jitter + d, where d < minting
         cache.time_func = lambda: 65
         # key should miss
         r = cache.get('test-key-4')
@@ -64,3 +66,17 @@ class CalmCacheTest(TestCase):
         # introspect the inner cache to make sure
         r = testcache.get(cache.make_key('test-key-4'))
         self.assertEqual(r, ('test-value-4', 77, True))
+
+    def test_grace_unfresh(self):
+        cache.set('test-key-6', 'test-value-6', timeout=60)
+        # travel forward in time: timeout + jitter + minting + d, where d < grace
+        cache.time_func = lambda: 75
+        # key should return stale value
+        r = cache.get('test-key-6')
+        self.assertEqual(r, 'test-value-6')
+        # Shuold miss because last fetch invalidated the key
+        r = cache.get('test-key-6')
+        self.assertIsNone(r)
+        # make sure the value was removed from the underlying cache
+        r = testcache.get(cache.make_key('test-key-6'))
+        self.assertIsNone(r)
