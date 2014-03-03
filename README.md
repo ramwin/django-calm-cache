@@ -62,14 +62,15 @@ Now relax knowing your site's caching won't fall over at the first sign of susta
 
  * `LOCATION`: the name of another, "real", Django cache backend. Will be used
    to actually store values
- * `MINT_DELAY`: the time period right after user-supplied timeout when first
-   request gets "not found" and has to refresh the value while all
-   following requests get stale value until it is either updated, expired
-   completely or grace period starts (see below)
- * `GRACE_TIME`: the time period after mint delay when stale value is returned
-   to first request and gets removed straight after that
+ * `MINT_DELAY`: the time period that starts right after user-supplied timeout.
+   First request during this period gets "not found" and is supposed to refresh
+   the value while all concurrent requests get stale value until it is either
+   updated or expired. Default: 0
+ * `GRACE_TIME`: the time period starting after mint delay.
+   During grace period stale value is returned only once and is removed after that.
+   Default: 0
  * `JITTER_TIME`: defines the range for `[0 ... JITTER_TIME]` random value
-   that is added to client supplied and "real" timeouts
+   that is added to client supplied and "real" timeouts. Default: 0
 
 
 #### CalmCache Guidelines
@@ -81,7 +82,7 @@ and underlying cache's `make_key()` methods' outputs, and usually are stacked:
 
 
 Minting is designed to cope with highly concurrent requests and `MINT_DELAY`
-whould be comparable to the stored object regeneration time.
+should be comparable to the stored object regeneration time.
 
 Grace period starts after mint delay and first request that comes during this time
 is satisfied with stale value. The value cached under the given key
@@ -95,6 +96,10 @@ as to the underlying cache's TTL in order to avoid cache self-synchronisation.
 The maximum real cache TTL is caclulated as
 
     timeout + MINT_DELAY + GRACE_TIME + JITTER_TIME
+
+
+Setting `MINT_DELAY`, `GRACE_TIME` or `JITTER_TIME` to `0` or not setting them
+at all turns off relevant logic in the code.
 
 
 #### CalmCache Limitations
