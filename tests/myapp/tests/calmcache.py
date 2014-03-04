@@ -55,7 +55,7 @@ class CalmCacheTest(TestCase):
         # make sure the key actually exists
         r = cache.get('test-key-4')
         self.assertEqual(r, 'test-value-4')
-        # travel forward in time: timeout + jitter + d, where d < minting
+        # travel forward in time: timeout + jitter + d, where d < mint_period
         cache.time_func = lambda: 65
         # key should miss
         r = cache.get('test-key-4')
@@ -69,7 +69,8 @@ class CalmCacheTest(TestCase):
 
     def test_grace_unfresh(self):
         cache.set('test-key-6', 'test-value-6', timeout=60)
-        # travel forward in time: timeout + jitter + minting + d, where d < grace
+        # travel forward in time: timeout + jitter + mint_period + d,
+        # where d < grace_period
         cache.time_func = lambda: 75
         # key should return stale value
         r = cache.get('test-key-6')

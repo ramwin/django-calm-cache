@@ -25,9 +25,11 @@ CACHES = {
     'default': {
         'BACKEND' : 'calm_cache.backends.CalmCache',
         'LOCATION': 'testcache',
-        'MINT_DELAY': '10',
-        'GRACE_TIME': '60',
-        'JITTER_TIME': '10',
+        'OPTIONS': {
+            'MINT_PERIOD': '10',
+            'GRACE_PERIOD': '60',
+            'JITTER': '10',
+        },
     },
     'testcache': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
