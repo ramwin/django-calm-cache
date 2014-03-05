@@ -16,11 +16,13 @@ class ZippedMCMixin(object):
     `MEMCACHE_MIN_COMPRESS_LEN`.
     """
 
+    min_compress_len = getattr(settings, 'MEMCACHE_MIN_COMPRESS_LEN', 0)
+
     def __init__(self, server, params):
-        self.min_compress_len = params.pop(
-            'MIN_COMPRESS_LEN',
-            getattr(settings, 'MEMCACHE_MIN_COMPRESS_LEN', 0))
         super(ZippedMCMixin, self).__init__(server, params)
+        if self._options is not None:
+            self.min_compress_len = self._options.pop('MIN_COMPRESS_LEN',
+                                                      self.min_compress_len)
 
     @cached_property
     def _cache(self):
@@ -41,20 +43,19 @@ class BinPyLibMCCache(DjangoPyLibMCCache):
     parameters or globally as Django setting `MEMCACHE_BINARY = True`
     """
 
+    binary_proto = getattr(settings, 'MEMCACHE_BINARY', False)
+
     def __init__(self, server, params):
-        self.binary_proto = params.pop(
-            'BINARY', getattr(settings, 'MEMCACHE_BINARY', False))
         super(BinPyLibMCCache, self).__init__(server, params)
+        if self._options is not None:
+            self.binary_proto = self._options.pop('BINARY', self.binary_proto)
 
-
-    # Shamelessly copied from django.cache.backends.PyLibMCCache
     @cached_property
     def _cache(self):
-        client = self._lib.Client(self._servers, binary=self.binary_proto)
-        if self._options:
-            client.behaviors = self._options
-
-        return client
+        cache = self._lib.Client(self._servers, binary=self.binary_proto)
+        if self._options is not None:
+            cache.behaviors = self._options
+        return cache
 
 
 class MemcachedCache(ZippedMCMixin, DjangoMemcachedCache):

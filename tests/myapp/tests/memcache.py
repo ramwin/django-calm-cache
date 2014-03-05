@@ -60,7 +60,7 @@ class MemcacheZipMixinTest(TestCase):
     def test_min_compress_length_kw(self):
         # Check if `min_compress_len` keyword argument is set in every
         # relevant function call
-        params = {'MIN_COMPRESS_LEN': 123}
+        params = {'OPTIONS': {'MIN_COMPRESS_LEN': 123}}
         cache = FakeZipMemcachedCache('localhost:11211', params)
 
         cache.add('key-1', 'value-1')
@@ -85,60 +85,18 @@ class MemcacheZipMixinTest(TestCase):
         cache.set_many({'key-3': 'value-3'})
         self.assertEqual(cache._cache.set_multi_kwargs['min_compress_len'], 0)
 
-    @override_settings(MEMCACHE_MIN_COMPRESS_LEN=321)
-    def test_min_compress_length_django_defaults(self):
-        # Check if default min_compress_len could be controlled by Django settings
-        cache = FakeZipMemcachedCache('localhost:11211', {})
-
-        cache.add('key-1', 'value-1')
-        self.assertEqual(cache._cache.add_kwargs['min_compress_len'], 321)
-
-        cache.set('key-2', 'value-2')
-        self.assertEqual(cache._cache.set_kwargs['min_compress_len'], 321)
-
-        cache.set_many({'key-3': 'value-3'})
-        self.assertEqual(cache._cache.set_multi_kwargs['min_compress_len'], 321)
-
-    @override_settings(MEMCACHE_MIN_COMPRESS_LEN=321)
-    def test_min_compress_length_param_prevail(self):
-        # Check if MIN_COMPRESS_LEN parameter prevails over Django defaults
-        params = {'MIN_COMPRESS_LEN': 123}
-        cache = FakeZipMemcachedCache('localhost:11211', params)
-
-        cache.add('key-1', 'value-1')
-        self.assertEqual(cache._cache.add_kwargs['min_compress_len'], 123)
-
-        cache.set('key-2', 'value-2')
-        self.assertEqual(cache._cache.set_kwargs['min_compress_len'], 123)
-
-        cache.set_many({'key-3': 'value-3'})
-        self.assertEqual(cache._cache.set_multi_kwargs['min_compress_len'], 123)
-
 
 class BinPyLibMCCacheTest(TestCase):
 
     @skipUnless(has_pylibmc, "pylibmc is not present")
     def test_binary_flag_set(self):
         # Check if binary setting has propagated from backend options
-        self.cache = BinPyLibMCCache('localhost:11211', {'BINARY': True})
+        self.cache = BinPyLibMCCache('localhost:11211',
+                                     {'OPTIONS': {'BINARY': True}})
         self.assertTrue(self.cache._cache.binary)
 
     @skipUnless(has_pylibmc, "pylibmc is not present")
     def test_binary_flag_defaults(self):
         # Check if binary setting is not set if 'BINARY' is not among params
         self.cache = BinPyLibMCCache('localhost:11211', {})
-        self.assertFalse(self.cache._cache.binary)
-
-    @skipUnless(has_pylibmc, "pylibmc is not present")
-    @override_settings(MEMCACHE_BINARY=True)
-    def test_binary_flag_django_defaults(self):
-        # Check if Django `MEMCACHE_BINARY` can affect settings
-        self.cache = BinPyLibMCCache('localhost:11211', {})
-        self.assertTrue(self.cache._cache.binary)
-
-    @skipUnless(has_pylibmc, "pylibmc is not present")
-    @override_settings(MEMCACHE_BINARY=True)
-    def test_binary_flag_params_prevail(self):
-        # Check if backend parameters prevail over Django settings
-        self.cache = BinPyLibMCCache('localhost:11211', {'BINARY': False})
         self.assertFalse(self.cache._cache.binary)
