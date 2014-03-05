@@ -35,7 +35,7 @@ Update the cache settings in your `settings.py`:
             'LOCATION': 'locmem-cache',
             'OPTIONS': {
                 'MINT_PERIOD': '10', # Allow stale results for this many seconds. Default: 0 (Off)
-                'GRACE_PERIOD': '120', # Serve stale value once during this period
+                'GRACE_PERIOD': '120', # Serve stale value once during this period. Default: 0 (Off)
                 'JITTER': '10', # Upper bound on the random jitter in seconds. Default: 0 (Off)
             },
         },
@@ -47,15 +47,15 @@ Update the cache settings in your `settings.py`:
             'BACKEND': 'calm_cache.backends.MemcachedCache',
             'LOCATION': '127.0.0.1:11211',
             'OPTIONS': {
-                'MIN_COMPRESS_LEN': 1024, # Compress values of this size or larger, bytes
+                'MIN_COMPRESS_LEN': 1024, # Compress values of this size or larger, bytes. Default: 0 (Disabled)
             },
         },
         'zipped-bin-pylibmc': {
             'BACKEND': 'calm_cache.backends.PyLibMCCache',
             'LOCATION': '127.0.0.1:11211',
             'OPTIONS': {
-                'MIN_COMPRESS_LEN': 1024, # Compress values larger than this size, bytes
-                'BINARY': True, # Enable binary protocol for this backend
+                'MIN_COMPRESS_LEN': 1024, # Compress values of this size or larger, bytes. Default: 0 (Disabled)
+                'BINARY': True, # Enable binary protocol for this backend. Default: False (Disabled)
             },
         },
     }
