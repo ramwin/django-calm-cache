@@ -46,13 +46,17 @@ Update the cache settings in your `settings.py`:
         'zipped-memcached': {
             'BACKEND': 'calm_cache.backends.MemcachedCache',
             'LOCATION': '127.0.0.1:11211',
-            'MIN_COMPRESS_LEN': 1024, # Compress values of this size or larger, bytes
+            'OPTIONS': {
+                'MIN_COMPRESS_LEN': 1024, # Compress values of this size or larger, bytes
+            },
         },
         'zipped-bin-pylibmc': {
             'BACKEND': 'calm_cache.backends.PyLibMCCache',
             'LOCATION': '127.0.0.1:11211',
-            'MIN_COMPRESS_LEN': 1024, # Compress values larger than this size, bytes
-            'BINARY': True, # Enable binary protocol for this backend
+            'OPTIONS': {
+                'MIN_COMPRESS_LEN': 1024, # Compress values larger than this size, bytes
+                'BINARY': True, # Enable binary protocol for this backend
+            },
         },
     }
 
@@ -60,10 +64,12 @@ Now relax knowing your site's caching won't fall over at the first sign of susta
 
 #### CalmCache Configuration
 
-`CalmCache` backend accepts the following parameters:
 
- * `LOCATION`: the name of another, "real", Django cache backend. Will be used
-   to actually store values
+`LOCATION` parameter defines the name of another, "real", Django cache backend
+which will be used to actually store values
+
+`CalmCache` backend accepts the following options:
+
  * `MINT_PERIOD`: the time period that starts right after the user-supplied
    or default timeout (`TIMEOUT` setting) ends.
    First request during this period receives get() miss (`None` or default) and
