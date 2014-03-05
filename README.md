@@ -33,9 +33,11 @@ Update the cache settings in your `settings.py`:
         'default': {
             'BACKEND' : 'calm_cache.backends.CalmCache',
             'LOCATION': 'locmem-cache',
-            'MINT_DELAY': '10', # Allow stale results for this many seconds. Default: 0 (Off)
-            'GRACE_TIME': '120', # Serve stale value once during this period
-            'JITTER_TIME': '10', # Upper bound on the random jitter in seconds. Default: 0 (Off)
+            'OPTIONS': {
+                'MINT_PERIOD': '10', # Allow stale results for this many seconds. Default: 0 (Off)
+                'GRACE_PERIOD': '120', # Serve stale value once during this period
+                'JITTER': '10', # Upper bound on the random jitter in seconds. Default: 0 (Off)
+            },
         },
         'locmem-cache': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -62,43 +64,44 @@ Now relax knowing your site's caching won't fall over at the first sign of susta
 
  * `LOCATION`: the name of another, "real", Django cache backend. Will be used
    to actually store values
- * `MINT_DELAY`: the time period that starts right after user-supplied timeout.
-   First request during this period gets "not found" and is supposed to refresh
-   the value while all concurrent requests get stale value until it is either
-   updated or expired. Default: 0
- * `GRACE_TIME`: the time period starting after mint delay.
+ * `MINT_PERIOD`: the time period that starts right after the user-supplied
+   or default timeout (`TIMEOUT` setting) ends.
+   First request during this period receives get() miss (`None` or default) and
+   refreshes the value while all other requests are returning cached (stale)
+   value until it is either updated or expired. Seconds. Default: 0
+ * `GRACE_PERIOD`: the time period starting after mint delay.
    During grace period stale value is returned only once and is removed after that.
-   Default: 0
- * `JITTER_TIME`: defines the range for `[0 ... JITTER_TIME]` random value
-   that is added to client supplied and "real" timeouts. Default: 0
+   Seconds. Default: 0
+ * `JITTER`: defines the range for `[0 ... JITTER]` random value
+   that is added to client supplied and "real" cache timeouts. Default: 0
 
 
 #### CalmCache Guidelines
 
-Actual stored key names are composed from `CalmCache.make_key()`
-and underlying cache's `make_key()` methods' outputs, and usually are stacked:
+Actual stored key names are composed of `CalmCache.make_key()`
+and underlying cache's `make_key()` methods' outputs, and therefore are stacked:
 
     real_cache_prefix:calm_cache_prefix:user_supplied_key
 
 
-Minting is designed to cope with highly concurrent requests and `MINT_DELAY`
-should be comparable to the stored object regeneration time.
+Minting is designed to cope with highly concurrent requests and good value
+of `MINT_PERIOD` would be comparable to the stored object regeneration time.
 
 Grace period starts after mint delay and first request that comes during this time
 is satisfied with stale value. The value cached under the given key
-is invalidated immediately and next requesting client will have to regenerate and
-store fresh value. This technique improves hit ratio for infrequently accessed
+is invalidated immediately and next requesting client will refresh and
+store a new value. This technique improves hit ratio for infrequently accessed
 data when occasional staleness is affordable.
 
-Jitter is added to the user supplied timeout (so it's always longer) as well
-as to the underlying cache's TTL in order to avoid cache self-synchronisation.
+Add random variability to the expiry of cache objects as they may be generated
+at the same time, which mitigates expiry synchronisation
 
 The maximum real cache TTL is caclulated as
 
-    timeout + MINT_DELAY + GRACE_TIME + JITTER_TIME
+    timeout + MINT_PERIOD + GRACE_PERIOD + JITTER
 
 
-Setting `MINT_DELAY`, `GRACE_TIME` or `JITTER_TIME` to `0` or not setting them
+Setting `MINT_PERIOD`, `GRACE_PERIOD` or `JITTER` to `0` or not setting them
 at all turns off relevant logic in the code.
 
 
