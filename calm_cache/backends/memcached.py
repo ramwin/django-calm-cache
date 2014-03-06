@@ -12,15 +12,17 @@ class ZippedMCMixin(object):
     compression that is available in both `memcache` and `pylibmc`.
 
     Minimal size of the object that will be compressed (bytes) is set either as
-    `MIN_COMPRESS_LEN` among backend parameters or as Django setting
+    `MIN_COMPRESS_LEN` among backend options or as Django setting
     `MEMCACHE_MIN_COMPRESS_LEN`.
     """
 
+    min_compress_len = getattr(settings, 'MEMCACHE_MIN_COMPRESS_LEN', 0)
+
     def __init__(self, server, params):
-        self.min_compress_len = params.pop(
-            'MIN_COMPRESS_LEN',
-            getattr(settings, 'MEMCACHE_MIN_COMPRESS_LEN', 0))
         super(ZippedMCMixin, self).__init__(server, params)
+        if self._options is not None:
+            self.min_compress_len = self._options.pop('MIN_COMPRESS_LEN',
+                                                      self.min_compress_len)
 
     @cached_property
     def _cache(self):
@@ -38,23 +40,22 @@ class BinPyLibMCCache(DjangoPyLibMCCache):
     Extend standard `PyLibMCCache` to support binary protocol.
 
     It can be enabled either by setting `BINARY: True` among backend
-    parameters or globally as Django setting `MEMCACHE_BINARY = True`
+    options or globally as Django setting `MEMCACHE_BINARY = True`
     """
 
+    binary_proto = getattr(settings, 'MEMCACHE_BINARY', False)
+
     def __init__(self, server, params):
-        self.binary_proto = params.pop(
-            'BINARY', getattr(settings, 'MEMCACHE_BINARY', False))
         super(BinPyLibMCCache, self).__init__(server, params)
+        if self._options is not None:
+            self.binary_proto = self._options.pop('BINARY', self.binary_proto)
 
-
-    # Shamelessly copied from django.cache.backends.PyLibMCCache
     @cached_property
     def _cache(self):
-        client = self._lib.Client(self._servers, binary=self.binary_proto)
-        if self._options:
-            client.behaviors = self._options
-
-        return client
+        cache = self._lib.Client(self._servers, binary=self.binary_proto)
+        if self._options is not None:
+            cache.behaviors = self._options
+        return cache
 
 
 class MemcachedCache(ZippedMCMixin, DjangoMemcachedCache):
@@ -68,7 +69,9 @@ class MemcachedCache(ZippedMCMixin, DjangoMemcachedCache):
             'default': {
                 'BACKEND': 'calm_cache.backends.MemcachedCache',
                 'LOCATION': '127.0.0.1:11211',
-                'MIN_COMPRESS_LEN': 1024,
+                'OPTIONS': {
+                    'MIN_COMPRESS_LEN': 1024,
+                },
             },
         }
     """
@@ -87,8 +90,10 @@ class PyLibMCCache(ZippedMCMixin, BinPyLibMCCache):
             'default': {
                 'BACKEND': 'calm_cache.backends.PyLibMCCache',
                 'LOCATION': '127.0.0.1:11211',
-                'MIN_COMPRESS_LEN': 1024,
-                'BINARY': True,
+                'OPTIONS': {
+                    'MIN_COMPRESS_LEN': 1024,
+                    'BINARY': True,
+                },
             },
         }
     """
