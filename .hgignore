@@ -1,2 +1,5 @@
 .pyc
+.tox
 django_calm_cache.egg-info/
+build/
+dist/

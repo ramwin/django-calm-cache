@@ -85,6 +85,13 @@ class MemcacheZipMixinTest(TestCase):
         cache.set_many({'key-3': 'value-3'})
         self.assertEqual(cache._cache.set_multi_kwargs['min_compress_len'], 0)
 
+    def test_multiple_initialisations(self):
+        # Make sure that second instance using the same config dictionary
+        # does not get default/absent value because of .pop()'ing
+        config = {'OPTIONS': {'MIN_COMPRESS_LEN': 65432}}
+        _ = FakeZipMemcachedCache('localhost:11211', config)
+        cache = FakeZipMemcachedCache('localhost:11211', config)
+        self.assertEqual(cache.min_compress_len, 65432)
 
 class BinPyLibMCCacheTest(TestCase):
 
@@ -100,3 +107,12 @@ class BinPyLibMCCacheTest(TestCase):
         # Check if binary setting is not set if 'BINARY' is not among params
         self.cache = BinPyLibMCCache('localhost:11211', {})
         self.assertFalse(self.cache._cache.binary)
+
+    @skipUnless(has_pylibmc, "pylibmc is not present")
+    def test_multiple_initialisations(self):
+        # Make sure that second instance using the same config dictionary
+        # does not get default/absent value because of .pop()'ing
+        config = {'OPTIONS': {'BINARY': True}}
+        _ = BinPyLibMCCache('localhost:11211', config)
+        cache = BinPyLibMCCache('localhost:11211', config)
+        self.assertTrue(cache.binary_proto)
