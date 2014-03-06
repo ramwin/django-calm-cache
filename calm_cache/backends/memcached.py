@@ -21,6 +21,7 @@ class ZippedMCMixin(object):
     def __init__(self, server, params):
         super(ZippedMCMixin, self).__init__(server, params)
         if self._options is not None:
+            self._options = self._options.copy()
             self.min_compress_len = self._options.pop('MIN_COMPRESS_LEN',
                                                       self.min_compress_len)
 
@@ -48,6 +49,7 @@ class BinPyLibMCCache(DjangoPyLibMCCache):
     def __init__(self, server, params):
         super(BinPyLibMCCache, self).__init__(server, params)
         if self._options is not None:
+            self._options = self._options.copy()
             self.binary_proto = self._options.pop('BINARY', self.binary_proto)
 
     @cached_property
