@@ -2,7 +2,7 @@ import sys
 from hashlib import sha1
 
 
-is_python3 = True if sys.version_info >= (3, 0, 0) else False
+is_python3 = sys.version_info >= (3, 0, 0)
 
 
 def sha1_key_func(key, key_prefix, version):
