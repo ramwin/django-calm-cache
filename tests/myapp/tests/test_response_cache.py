@@ -154,16 +154,16 @@ class ResponseCacheTest(TestCase):
         request = self.random_get()
         rsp1 = decorated_view(request)
         # Shouldn't be rendered yet
-        self.assertFalse(hasattr(rsp1, 'content'))
+        self.assertFalse(rsp1.is_rendered)
         rsp1.render()
         time.sleep(0.1)
         rsp2 = decorated_view(request)
         # Should be already rendered because fetched from the cache
-        self.assertTrue(hasattr(rsp2, 'content'))
+        self.assertTrue(rsp2.is_rendered)
         time.sleep(0.3)
         rsp3 = decorated_view(request)
         # Shouldn't be rendered yet again
-        self.assertFalse(hasattr(rsp3, 'content'))
+        self.assertFalse(rsp3.is_rendered)
         rsp3.render()
         # Compare content
         self.assertEqual(rsp1.content, rsp2.content)
