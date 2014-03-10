@@ -27,7 +27,7 @@ class KeyFuncTest(TestCase):
         # Resulting key should contain hashed part
         # It's the word "Russian" in, well, Russian
         key = sha1_key_func(
-            '\xd1\x80\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9',
+            b'\xd1\x80\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9',
             'prefix', 'v1')
         self.assertEqual(key,
                          'prefix:v1:10c8e649725ee2829541600cf8528d91306c5aaa')
@@ -48,7 +48,7 @@ class KeyFuncTest(TestCase):
         self.assertLess(len(key), 250)
 
     def test_sha1_key_func_cache(self):
-        plain_key = 'test-key-10'
+        plain_key = b'test-key-10'
         hashed_key = hashlib.sha1(plain_key).hexdigest()
         # Store with pre-hashed key, replace
         # key function and fetch with plain key
