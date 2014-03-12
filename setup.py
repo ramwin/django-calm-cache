@@ -21,7 +21,7 @@ def fread(fn):
 
 setup(
     name="django-calm-cache",
-    description="A set of useful tools that enhance standard Django cache experience",
+    description="A set of useful tools that enhance the standard Django cache experience",
     long_description=fread('README.md'),
     keywords="django cache memcache memcached minting pylibmc libmemcached",
     author="Caleb Brown",
