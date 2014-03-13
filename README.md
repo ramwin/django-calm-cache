@@ -13,18 +13,17 @@ bucket loads of traffic.
    data compression provided by [python-memcached](ftp://ftp.tummy.com/pub/python-memcached/)
    and [pylibmc](http://sendapatch.se/projects/pylibmc/) respectively
  * `PyLibMCCache` is extended to support binary protocol
- * `cache_response` that could be applied to any Django view and
+ * `cache_response` decorator that could be applied to any Django view and
    conditionally cache responses just like Django standard `CacheMiddleware`
    and `cache_page` do, but more configurable, explicit and extensible
 
-## Quick Start
+## Installation
 
-First install the library:
-
+    :::shell
     pip install hg+https://bitbucket.org/pitcrews/django-calm-cache/
 
 
-### Cache backends
+### Cache Backends
 
 Update the cache settings in your `settings.py`:
 
@@ -33,6 +32,7 @@ Update the cache settings in your `settings.py`:
         'default': {
             'BACKEND' : 'calm_cache.backends.CalmCache',
             'LOCATION': 'locmem-cache',
+            'KEY_FUNCTION': 'calm_cache.contrib.sha1_key_func',
             'OPTIONS': {
                 'MINT_PERIOD': '10', # Allow stale results for this many seconds. Default: 0 (Off)
                 'GRACE_PERIOD': '120', # Serve stale value once during this period. Default: 0 (Off)
@@ -74,12 +74,12 @@ which will be used to actually store values
    or default timeout (`TIMEOUT` setting) ends.
    First request during this period receives get() miss (`None` or default) and
    refreshes the value while all other requests are returning cached (stale)
-   value until it is either updated or expired. Seconds. Default: 0
+   value until it is either updated or expired. Seconds. Default: `0`
  * `GRACE_PERIOD`: the time period starting after mint delay.
    During grace period stale value is returned only once and is removed after that.
-   Seconds. Default: 0
+   Seconds. Default: `0`
  * `JITTER`: defines the range for `[0 ... JITTER]` random value
-   that is added to client supplied and "real" cache timeouts. Default: 0
+   that is added to client supplied and "real" cache timeouts. Seconds. Default: `0`
 
 
 #### CalmCache Guidelines
@@ -141,7 +141,7 @@ defaults:
  * `codes`: a list/tuple with cacheable response codes.
    Default: `(200, )`. Django setting: `CCRC_CACHE_RSP_CODES`
  * `nocache_rsp`: a list of response headers that prevents response
-   from being cached. Default: ('Set-Cookie', 'Vary').
+   from being cached. Default: `('Set-Cookie', 'Vary')`.
    Django setting: `CCRC_NOCACHE_RSP_HEADERS`
  * `anonymous_only`: boolean selecting whether only anonymous requests
    should be served from the cache/responses cached.
@@ -169,7 +169,7 @@ defaults:
    a string with the key or `None` if the request should not be cached.
 
 
-#### ResponseCache features
+#### ResponseCache Features and Guidelines
 
  * Unlike `CacheMiddleware`, `cache_response` does not analyse `Cache-Control`
    header and does not change cache TTL. The header is cached along
@@ -181,6 +181,10 @@ defaults:
  * Responses that have CSRF token(s) are never cached
  * Requests that have authenticated user associated with them are not cached
    by default
+ * URL and Hostname are used to build the cache key, which could be a problem
+   for certain caching engines due to their limitation to key characters and length.
+   You are advised to use some hashing `KEY_FUNCTION` in your caching backend, like,
+   for example, provided `calm_cache.contrib.sha1_key_func`
 
 
 ## Legals
