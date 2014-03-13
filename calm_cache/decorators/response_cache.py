@@ -2,6 +2,7 @@ from functools import wraps
 
 from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
 from django.utils.http import http_date
+from django.template.response import SimpleTemplateResponse
 from django.conf import settings
 
 
@@ -189,20 +190,19 @@ class ResponseCache(object):
         Wraps decorated view, conditionally performing response caching.
         """
         cache_key = self.key_func(request)
-        if not self.should_fetch(request) or cache_key is None:
+        if cache_key is None or not self.should_fetch(request):
             # Return immediately
             return self.wrapped(request, *args, **kwargs)
         # Fetch from cache and return if found
         cached_response = self.cache.get(cache_key)
         if cached_response is not None:
-            # Add cache hit header
             return cached_response
 
         # Execute the view
         response = self.wrapped(request, *args, **kwargs)
 
-        # Based on django.middleware.cache.UpdateCacheMiddleware
-        if hasattr(response, 'render') and callable(response.render):
+        # Check if this is TemplateResponse and it's not rendered yet
+        if isinstance(response, SimpleTemplateResponse) and not response.is_rendered:
             # SimpleTemplateResponse and TemplateResponse are different
             # Should store reponses after they are rendered
             response.add_post_render_callback(
