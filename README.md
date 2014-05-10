@@ -122,9 +122,9 @@ at all turns off relevant logic in the code.
 Example usage:
 
     :::python
-    from calm_cache.decorated import cache_response
+    from calm_cache.decorators import cache_response
 
-    @cache_response(15, key_prefix='my_view', codes=(200, 404)):
+    @cache_response(15, key_prefix='my_view', codes=(200, 404))
     def my_view(request, slug=None):
         return HttpResponse()
 
