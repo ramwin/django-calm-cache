@@ -1,5 +1,12 @@
-.pyc
-.tox/
+syntax: glob
+
+*.pyc
 django_calm_cache.egg-info/
 build/
 dist/
+
+# test output
+.tox/
+.coverage
+junit-*.xml
+coverage.xml
