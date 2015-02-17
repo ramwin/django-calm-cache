@@ -40,6 +40,10 @@ class FakeLibMC(object):
             self.set_multi_args = args
             self.set_multi_kwargs = kwargs
 
+        def delete(self, *args, **kwargs):
+            self.delete_args = args
+            self.delete_kwargs = kwargs
+
 
 class FakeMemcachedCache(BaseMemcachedCache):
     """
