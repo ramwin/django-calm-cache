@@ -27,7 +27,7 @@ setup(
     author="Fairfax Media",
     author_email="opensource@pitcre.ws",
     url="https://bitbucket.org/pitcrews/django-calm-cache",
-    version="0.9.0",
+    version="0.9.1",
     license="BSD 3-Clause",
     classifiers = [
         "Development Status :: 4 - Beta",

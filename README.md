@@ -140,6 +140,11 @@ defaults:
    Default: `('GET', )`. Django setting: `CCRC_CACHE_REQ_METHDODS`
  * `codes`: a list/tuple with cacheable response codes.
    Default: `(200, )`. Django setting: `CCRC_CACHE_RSP_CODES`
+ * `nocache_req`: a dictionary with request headers as keys and
+   regular expressions as values (strings or compiled), so that when request
+   has a header with value matching the expression,
+   the response is never cached. The headers should be put in WSGI format,
+   i.e. `'HTTP_X_FORWARDED_FOR'`. Default: `{}`.
  * `nocache_rsp`: a list of response headers that prevents response
    from being cached. Default: `('Set-Cookie', 'Vary')`.
    Django setting: `CCRC_NOCACHE_RSP_HEADERS`

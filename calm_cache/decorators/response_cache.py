@@ -1,4 +1,5 @@
 from functools import wraps
+import re
 
 from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
 from django.utils.http import http_date
@@ -28,6 +29,7 @@ class ResponseCache(object):
     excluded_cookies = getattr(settings, 'CCRC_EXCLUDED_REQ_COOKIES', ())
     methods = getattr(settings, 'CCRC_CACHE_REQ_METHDODS', ('GET', ))
     codes = getattr(settings, 'CCRC_CACHE_RSP_CODES', (200, ))
+    nocache_req = getattr(settings, 'CCRC_NOCACHE_REQ_HEADERS', {})
     nocache_rsp = getattr(settings, 'CCRC_NOCACHE_RSP_HEADERS',
                           ('Set-Cookie', 'Vary'))
     key_prefix = getattr(settings, 'CCRC_KEY_PREFIX', '')
@@ -49,6 +51,12 @@ class ResponseCache(object):
                 Default: `('GET', )`. Django setting: `CCRC_CACHE_REQ_METHDODS`
             `codes`: a list/tuple with cacheable response codes.
                 Default: `(200, )`. Django setting: `CCRC_CACHE_RSP_CODES`
+            `nocache_req`: a dictionary with request headers as keys and
+                regular expressions as values (strings or compiled),
+                so that when request has a header with value matching
+                the expression, the response is never cached. The headers
+                should be put in WSGI format, i.e. 'HTTP_X_FORWARDED_FOR'.
+                Default: {}
             `nocache_rsp`: a list of response headers that prevents response
                 from being cached. Default: ('Set-Cookie', 'Vary').
                 Django setting: `CCRC_NOCACHE_RSP_HEADERS`
@@ -84,8 +92,9 @@ class ResponseCache(object):
         self.cache = get_cache(kwargs.get('cache', self.cache))
         self.key_func = kwargs.get('key_func', self._key_func)
         options = ('anonymous_only', 'cache_cookies', 'excluded_cookies',
-                   'methods', 'codes', 'nocache_rsp', 'key_prefix',
-                   'include_scheme', 'include_host', 'hitmiss_header')
+                   'methods', 'codes', 'nocache_req', 'nocache_rsp',
+                   'key_prefix', 'include_scheme', 'include_host',
+                   'hitmiss_header')
         for option in options:
             setattr(self, option, kwargs.get(option, getattr(self, option)))
 
@@ -131,6 +140,10 @@ class ResponseCache(object):
         """
         if not request.method in self.methods:
             return False
+        for header, regex in self.nocache_req.items():
+            if header in request.META and  re.search(regex,
+                                                     request.META[header]):
+                return False
         if self.anonymous_only:
             if hasattr(request, 'user') and not request.user.is_anonymous():
                 return False
