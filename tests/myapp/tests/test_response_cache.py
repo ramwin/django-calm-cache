@@ -235,6 +235,22 @@ class ResponseCacheTest(TestCase):
         self.assertTrue(rsp1.has_header('Vary'))
         self.assertFalse(rsp2.has_header('Vary'))
 
+    def test_not_caching_configured_req_hdr(self):
+        decorated_view = ResponseCache(
+            0.3, cache='testcache',
+            nocache_req={'HTTP_HDR1':'.123[abc]'})(randomView)
+        request = self.random_get()
+        # Should match and pass not cached
+        request.META['HTTP_HDR1'] = '0a123b'
+        rsp1 = decorated_view(request)
+        rsp2 = decorated_view(request)
+        self.assertNotEqual(rsp1.content, rsp2.content)
+        # Should not match and be cached
+        request.META['HTTP_HDR1'] = 'other'
+        rsp3 = decorated_view(request)
+        rsp4 = decorated_view(request)
+        self.assertEqual(rsp3.content, rsp4.content)
+
     def test_not_caching_configured_rsp_hdr(self):
         decorated_view = ResponseCache(
             0.3, cache='testcache', nocache_rsp=('Hdr1',))(randomView)
