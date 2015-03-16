@@ -82,7 +82,7 @@ class ResponseCache(object):
                 If set to `None`, the header is never added
                 Default: `('X-Cache', 'Hit', 'Miss')'`.
                 Django setting: `CCRC_HITMISS_HEADER`
-            `key_function`: optional callable that should be used instead of
+            `key_func`: optional callable that should be used instead of
                 built-in key function.
                 Has to accept request as its only argument and return either
                 a string with the key or `None` if the request
