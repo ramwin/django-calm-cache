@@ -3,7 +3,7 @@
 import time
 import random
 
-from django.core.cache import get_cache
+from django.core.cache import caches
 from django.core.cache.backends.base import BaseCache
 
 
@@ -44,7 +44,7 @@ class CalmCache(BaseCache):
         self.time_func = time.time
         self.rand_func = random.randint
 
-        self.cache = get_cache(real_cache)
+        self.cache = caches[real_cache]
 
     @property
     def packing_enabled(self):

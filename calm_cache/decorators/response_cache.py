@@ -1,7 +1,7 @@
 from functools import wraps
 import re
 
-from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
+from django.core.cache import caches, DEFAULT_CACHE_ALIAS
 from django.utils.http import http_date
 from django.template.response import SimpleTemplateResponse
 from django.conf import settings
@@ -89,7 +89,7 @@ class ResponseCache(object):
                 should not be cached.
         """
         self.cache_timeout = cache_timeout
-        self.cache = get_cache(kwargs.get('cache', self.cache))
+        self.cache = caches[kwargs.get('cache', self.cache)]
         self.key_func = kwargs.get('key_func', self._key_func)
         options = ('anonymous_only', 'cache_cookies', 'excluded_cookies',
                    'methods', 'codes', 'nocache_req', 'nocache_rsp',
