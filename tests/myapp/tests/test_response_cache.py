@@ -1,4 +1,5 @@
 import time
+import logging
 from uuid import uuid4
 
 from django.test import TestCase
@@ -7,7 +8,7 @@ from unittest import skipUnless
 from django.utils.http import http_date
 from django.http import HttpResponse
 from django.contrib.auth.models import User, AnonymousUser
-from django.template import Template, RequestContext
+from django.template import Template, RequestContext, Context
 from django.template.response import TemplateResponse
 
 from django.core.cache import caches
@@ -18,6 +19,9 @@ try:
     from django.http import StreamingHttpResponse
 except ImportError:
     StreamingHttpResponse = None
+
+
+log = logging.getLogger(__name__)
 
 
 def randomView(request, last_modified=None, headers=None):
@@ -37,12 +41,17 @@ def randomView(request, last_modified=None, headers=None):
 
 def randomTemplateView(request):
     t = Template("%s" % uuid4())
-    return TemplateResponse(request, t)
+    context = Context({})
+    return HttpResponse(t.render(context))
 
 
 def csrfView(request):
-    t = Template("myapp/csrf_template.html")
-    return HttpResponse(t.render(RequestContext(request, {"uuid": uuid4()})))
+    log.info("call csrfView")
+    t = Template("{{uuid}} {% csrf_token %}")
+    context = RequestContext(request, {"uuid": uuid4()})
+    response = HttpResponse(
+        t.render(context))
+    return response
 
 
 def csrfTemplateView(request):
@@ -158,18 +167,12 @@ class ResponseCacheTest(TestCase):
         decorated_view = rsp_cache(randomTemplateView)
         request = self.random_get()
         rsp1 = decorated_view(request)
-        # Shouldn't be rendered yet
-        self.assertFalse(rsp1.is_rendered)
-        rsp1.render()
         time.sleep(0.1)
         rsp2 = decorated_view(request)
         # Should be already rendered because fetched from the cache
-        self.assertTrue(rsp2.is_rendered)
         time.sleep(0.3)
         rsp3 = decorated_view(request)
         # Shouldn't be rendered yet again
-        self.assertFalse(rsp3.is_rendered)
-        rsp3.render()
         # Compare content
         self.assertEqual(rsp1.content, rsp2.content)
         self.assertNotEqual(rsp1.content, rsp3.content)
@@ -376,7 +379,6 @@ class ResponseCacheTest(TestCase):
         decorated_view = cache(randomTemplateView)
         request = self.random_get()
         rsp1 = decorated_view(request)
-        rsp1.render()
         rsp2 = decorated_view(request)
         self.assertFalse(rsp1.has_header('X-Cache'))
         self.assertFalse(rsp2.has_header('X-Cache'))
