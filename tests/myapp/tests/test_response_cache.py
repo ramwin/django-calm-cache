@@ -3,16 +3,15 @@ from uuid import uuid4
 
 from django.test import TestCase
 from django.test.client import RequestFactory
-from django.utils.unittest import skipUnless
+from unittest import skipUnless
 from django.utils.http import http_date
 from django.http import HttpResponse
 from django.contrib.auth.models import User, AnonymousUser
 from django.template import Template, RequestContext
 from django.template.response import TemplateResponse
 
-from django.core.cache import get_cache
+from django.core.cache import caches
 
-from calm_cache import decorators
 from calm_cache.decorators import ResponseCache
 
 try:
@@ -35,27 +34,29 @@ def randomView(request, last_modified=None, headers=None):
 
     return response
 
+
 def randomTemplateView(request):
     t = Template("%s" % uuid4())
     return TemplateResponse(request, t)
 
+
 def csrfView(request):
-    t = Template("%s: {{ csrf_token }}" % uuid4())
-    return HttpResponse(t.render(RequestContext(request)))
+    t = Template("myapp/csrf_template.html")
+    return HttpResponse(t.render(RequestContext(request, {"uuid": uuid4()})))
+
 
 def csrfTemplateView(request):
-    t = Template("%s: {{ csrf_token }}" % uuid4())
-    return TemplateResponse(request, t)
+    t = "myapp/csrf_template.html"
+    return TemplateResponse(request, t, {"uuid": uuid4()})
 
 
 rsp_cache = ResponseCache(0.3, cache='testcache')
 
 
 class ResponseCacheTest(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
-        get_cache('testcache').clear()
+        caches['testcache'].clear()
 
     def random_get(self):
         return self.factory.get('/%s' % uuid4())
@@ -72,24 +73,27 @@ class ResponseCacheTest(TestCase):
         request = self.factory.get('/url3/?k3=v3')
         request.is_secure = lambda: True
         self.assertEqual(cache.key_func(request),
-                'p#GET#https#testserver:80#/url3/?k3=v3')
+                         'p#GET#https#testserver:80#/url3/?k3=v3')
         # Try different Host: + normalisation
         request = self.factory.get('/url4/?k4=v4', HTTP_HOST='FooBar')
         self.assertEqual(cache.key_func(request),
-                'p#GET#http#foobar#/url4/?k4=v4')
+                         'p#GET#http#foobar#/url4/?k4=v4')
 
     def test_default_key_function_parts_omission(self):
         request = self.factory.get('/url10/?k10=v10')
         # Empty prefix
-        self.assertEqual(ResponseCache(1).key_func(request),
-                '#GET#http#testserver#/url10/?k10=v10')
+        self.assertEqual(
+            ResponseCache(1).key_func(request),
+            '#GET#http#testserver#/url10/?k10=v10')
         # Do not consider scheme
         self.assertEqual(
-            ResponseCache(1, key_prefix='p', include_scheme=False).key_func(request),
+            ResponseCache(1, key_prefix='p',
+                          include_scheme=False).key_func(request),
             'p#GET##testserver#/url10/?k10=v10')
         # Do not consider host
         self.assertEqual(
-            ResponseCache(1, key_prefix='p', include_host=False).key_func(request),
+            ResponseCache(1, key_prefix='p',
+                          include_host=False).key_func(request),
             'p#GET#http##/url10/?k10=v10')
 
     def test_user_supplied_key_function(self):
@@ -120,19 +124,20 @@ class ResponseCacheTest(TestCase):
     def test_should_store(self):
         cache = ResponseCache(1)
         # Check normal response (200)
-        self.assertTrue(cache.should_store(self.factory.get('/'),
-                                           HttpResponse()))
+        self.assertTrue(
+            cache.should_store(self.factory.get('/'), HttpResponse()))
         # Check some non-200 response codes
         for code in (201, 404, 403, 500, 502, 503, 301, 302):
-            self.assertFalse(cache.should_store(self.factory.get('/'),
-                             HttpResponse(status=code)))
+            self.assertFalse(
+                cache.should_store(self.factory.get('/'),
+                                   HttpResponse(status=code)))
 
     @skipUnless(StreamingHttpResponse, "Too old for StreamingHttpResponse?")
     def test_should_store_streaming(self):
         cache = ResponseCache(1)
         # StreamingHttpResponse is never cached
-        self.assertFalse(cache.should_store(self.factory.get('/'),
-                         StreamingHttpResponse()))
+        self.assertFalse(
+            cache.should_store(self.factory.get('/'), StreamingHttpResponse()))
 
     def test_caching_decorator(self):
         decorated_view = rsp_cache(randomView)
@@ -174,21 +179,24 @@ class ResponseCacheTest(TestCase):
         # Different URLs are cached under different keys
         request1 = self.random_get()
         request2 = self.random_get()
-        self.assertNotEqual(decorated_view(request1).content,
-                            decorated_view(request2).content)
+        self.assertNotEqual(
+            decorated_view(request1).content,
+            decorated_view(request2).content)
 
     def test_uncacheable_requests(self):
         # Test authenticated requests (shouldn't cache)
         decorated_view = rsp_cache(randomView)
         request = self.factory.get('/')
         request.user = User.objects.create_user('u1', 'u1@u1.com', 'u1')
-        self.assertNotEqual(decorated_view(request).content,
-                            decorated_view(request).content)
+        self.assertNotEqual(
+            decorated_view(request).content,
+            decorated_view(request).content)
 
         # Test HEADs (should not cache)
         request = self.factory.head('/')
-        self.assertNotEqual(decorated_view(request).content,
-                            decorated_view(request).content)
+        self.assertNotEqual(
+            decorated_view(request).content,
+            decorated_view(request).content)
 
     def test_last_modified_default(self):
         decorated_view = rsp_cache(randomView)
@@ -236,9 +244,10 @@ class ResponseCacheTest(TestCase):
         self.assertFalse(rsp2.has_header('Vary'))
 
     def test_not_caching_configured_req_hdr(self):
-        decorated_view = ResponseCache(
-            0.3, cache='testcache',
-            nocache_req={'HTTP_HDR1':'.123[abc]'})(randomView)
+        decorated_view = ResponseCache(0.3,
+                                       cache='testcache',
+                                       nocache_req={'HTTP_HDR1':
+                                                    '.123[abc]'})(randomView)
         request = self.random_get()
         # Should match and pass not cached
         request.META['HTTP_HDR1'] = '0a123b'
@@ -252,8 +261,9 @@ class ResponseCacheTest(TestCase):
         self.assertEqual(rsp3.content, rsp4.content)
 
     def test_not_caching_configured_rsp_hdr(self):
-        decorated_view = ResponseCache(
-            0.3, cache='testcache', nocache_rsp=('Hdr1',))(randomView)
+        decorated_view = ResponseCache(0.3,
+                                       cache='testcache',
+                                       nocache_rsp=('Hdr1', ))(randomView)
         # First request with Set-Cookie is not cached
         request = self.random_get()
         rsp1 = decorated_view(request, headers={'Hdr1': 'val1'})
@@ -294,7 +304,9 @@ class ResponseCacheTest(TestCase):
         self.assertNotEqual(rsp1.content, rsp2.content)
 
     def test_whitelisted_req_cookies(self):
-        cache = ResponseCache(0.3, cache='testcache', excluded_cookies=('c1',))
+        cache = ResponseCache(0.3,
+                              cache='testcache',
+                              excluded_cookies=('c1', ))
         decorated_view = cache(randomView)
         # This cookie does not prevent request from being cached
         request = self.random_get()
@@ -314,8 +326,10 @@ class ResponseCacheTest(TestCase):
         self.assertEqual(rsp1.content, rsp2.content)
 
     def test_blacklisted_req_cookies(self):
-        cache = ResponseCache(0.3, cache='testcache', cache_cookies=True,
-                              excluded_cookies=('c1',))
+        cache = ResponseCache(0.3,
+                              cache='testcache',
+                              cache_cookies=True,
+                              excluded_cookies=('c1', ))
         decorated_view = cache(randomView)
         # This cookie prevents this request from being cached,
         # though generally cookies are allowed
@@ -334,7 +348,8 @@ class ResponseCacheTest(TestCase):
         self.assertEqual(rsp2['X-Cache'], 'Hit')
 
     def test_custom_hitmiss_header(self):
-        cache = ResponseCache(0.3, cache='testcache',
+        cache = ResponseCache(0.3,
+                              cache='testcache',
                               hitmiss_header=('h', '+', '-'))
         decorated_view = cache(randomView)
         request = self.random_get()
@@ -355,7 +370,8 @@ class ResponseCacheTest(TestCase):
         self.assertFalse(rsp2.has_header('X-Cache'))
 
     def test_custom_hitmiss_header_template_view(self):
-        cache = ResponseCache(0.3, cache='testcache',
+        cache = ResponseCache(0.3,
+                              cache='testcache',
                               hitmiss_header=('h', '+', '-'))
         decorated_view = cache(randomTemplateView)
         request = self.random_get()

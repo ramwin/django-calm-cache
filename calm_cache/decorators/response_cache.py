@@ -145,7 +145,7 @@ class ResponseCache(object):
                                                      request.META[header]):
                 return False
         if self.anonymous_only:
-            if hasattr(request, 'user') and not request.user.is_anonymous():
+            if hasattr(request, 'user') and not request.user.is_anonymous:
                 return False
         if not self.cache_cookies:
             for cookie in request.COOKIES:

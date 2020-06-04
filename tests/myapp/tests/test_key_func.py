@@ -1,7 +1,7 @@
 import hashlib
 
 from django.test import TestCase
-from django.core.cache import cache, get_cache
+from django.core.cache import cache, caches
 
 from calm_cache.contrib import sha1_key_func
 

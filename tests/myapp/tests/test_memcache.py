@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.test.utils import override_settings
-from django.utils.unittest import skipUnless
+from unittest import skipUnless
 from django.core.cache.backends.memcached import BaseMemcachedCache
 
 from calm_cache.backends.memcached import ZippedMCMixin, BinPyLibMCCache

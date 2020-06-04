@@ -2,7 +2,8 @@ from django.core.cache.backends.memcached import (
     BaseMemcachedCache,
     MemcachedCache as DjangoMemcachedCache,
     PyLibMCCache as DjangoPyLibMCCache)
-from django.utils.functional import cached_property, curry
+from django.utils.functional import cached_property
+from functools import partial
 from django.conf import settings
 
 
@@ -29,9 +30,9 @@ class ZippedMCMixin(object):
     def _cache(self):
         cache = super(ZippedMCMixin, self)._cache
         # Decorate methods so that min_compress_len is always added
-        cache.add = curry(cache.add, min_compress_len=self.min_compress_len)
-        cache.set = curry(cache.set, min_compress_len=self.min_compress_len)
-        cache.set_multi = curry(
+        cache.add = partial(cache.add, min_compress_len=self.min_compress_len)
+        cache.set = partial(cache.set, min_compress_len=self.min_compress_len)
+        cache.set_multi = partial(
             cache.set_multi, min_compress_len=self.min_compress_len)
         return cache
 
