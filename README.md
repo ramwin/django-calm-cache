@@ -25,9 +25,8 @@ So I forked and update the django3-calm-cache repository
 
 ## Installation
 
-```
-pip3 install django3-calm-cache
-```
+    :::shell
+    pip3 install django3-calm-cache
 
 
 ### Cache Backends
