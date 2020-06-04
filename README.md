@@ -3,6 +3,12 @@
 `django-calm-cache` keeps your cache calm while your site is being hammered by
 bucket loads of traffic.
 
+this project is forked from [pitcrews:django-calm-cache](https://bitbucket.org/pitcrews/django-calm-cache/).  
+Thanks for all the contributors.  
+But the origin project can't be used in new verion of django.  
+And it seems the author didn't update the package in pypi.  
+So I forked and update the django3-calm-cache repository
+
 ## Key Features
 
  * [Mint caching](http://djangosnippets.org/snippets/155/) to avoid the
@@ -19,8 +25,9 @@ bucket loads of traffic.
 
 ## Installation
 
-    :::shell
-    pip install hg+https://bitbucket.org/pitcrews/django-calm-cache/
+```
+pip3 install django3-calm-cache
+```
 
 
 ### Cache Backends

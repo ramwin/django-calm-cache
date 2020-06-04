@@ -20,14 +20,14 @@ def fread(fn):
         return f.read()
 
 setup(
-    name="django-calm-cache",
+    name="django3-calm-cache",
     description="A set of useful tools that enhance the standard Django cache experience",
     long_description=fread('README.md'),
     keywords="django cache memcache memcached minting pylibmc libmemcached",
     author="Fairfax Media",
-    author_email="opensource@pitcre.ws",
-    url="https://bitbucket.org/pitcrews/django-calm-cache",
-    version="0.9.2",
+    author_email="ramwin@qq.com",
+    url="https://github.com/ramwin/django-calm-cache",
+    version="1.0.0",
     license="BSD 3-Clause",
     classifiers = [
         "Development Status :: 4 - Beta",
