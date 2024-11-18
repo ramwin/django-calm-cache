@@ -1,7 +1,7 @@
 from django.core.cache.backends.memcached import (
     BaseMemcachedCache,
-    MemcachedCache as DjangoMemcachedCache,
     PyLibMCCache as DjangoPyLibMCCache)
+from django.core.cache.backends.memcached import PyMemcacheCache as DjangoMemcachedCache
 from django.utils.functional import cached_property
 from functools import partial
 from django.conf import settings

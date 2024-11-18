@@ -28,7 +28,7 @@ setup(
     author="Xiang Wang",
     author_email="ramwin@qq.com",
     url="https://github.com/ramwin/django-calm-cache",
-    version="1.0.1",
+    version="1.0.2",
     license="BSD 3-Clause",
     classifiers = [
         "Development Status :: 4 - Beta",
